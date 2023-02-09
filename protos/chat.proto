@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.modules.chatserver";
+option java_outer_classname = "ChatServerProto";
+option objc_class_prefix = "CHSR";
+
+package helloworld;
+
+// The greeting service definition.
+service ChatServer {
+  // Sends a greeting
+  rpc SayHello (MessageRequest) returns (MessageReply) {}
+
+  rpc SayHelloStreamReply (MessageRequest) returns (stream MessageReply) {}
+}
+
+// The request message containing the user's name.
+message MessageRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message MessageReply {
+  string message = 1;
+}
