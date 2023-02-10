@@ -9,6 +9,7 @@ import chat_pb2_grpc
 class ChatServer(chat_pb2_grpc.ChatServerServicer):
 
     def SayHello(self, request, context):
+        print(context, request)
         return chat_pb2.MessageReply(message='Hello, %s!' % request.name)
 
 

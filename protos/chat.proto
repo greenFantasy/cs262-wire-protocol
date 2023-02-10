@@ -17,10 +17,79 @@ service ChatServer {
 
 // The request message containing the user's name.
 message MessageRequest {
-  string name = 1;
+  int version = 1;
+  string auth_token = 2;
+  string username = 3;
+  string message = 4;
 }
 
 // The response message containing the greetings
 message MessageReply {
-  string message = 1;
+  int version = 1;
+  string error_code = 2;
 }
+
+message PingRequest {
+  int version = 1;
+  string message = 2;
+}
+
+// The response message containing the greetings
+message PingReply {
+  int version = 1;
+  string error_code = 2;
+}
+
+message LoginRequest {
+  int version = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message LoginReply {
+  int version = 1;
+  string error_code = 2;
+  string auth_token = 3;
+  string fullname = 4;
+}
+
+message AccountCreateRequest {
+  int version = 1;
+  string username = 2;
+  string password = 3;
+  string fullname = 4;
+}
+
+message AccountCreateReply {
+  int version = 1;
+  string error_code = 2;
+  string auth_token = 3;
+  string fullname = 4;
+}
+
+message ListAccountRequest {
+  int version = 1;
+  string auth_token = 2;
+  int number_of_accounts = 3;
+  string regex = 4;
+}
+
+message ListAccountReply {
+  int version = 1;
+  string error_code = 2;
+  string account_names = 3;
+}
+
+message DeleteAccountRequest {
+  int version = 1;
+  string auth_token = 2;
+}
+
+message DeleteAccountReply {
+  int version = 1;
+  stirng error_code = 2;
+}
+
+
+
+
