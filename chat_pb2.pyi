@@ -101,29 +101,35 @@ class MessageReply(_message.Message):
     def __init__(self, version: _Optional[int] = ..., error_code: _Optional[str] = ...) -> None: ...
 
 class MessageRequest(_message.Message):
-    __slots__ = ["auth_token", "message", "username", "version"]
+    __slots__ = ["auth_token", "message", "recipient_username", "username", "version"]
     AUTH_TOKEN_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    RECIPIENT_USERNAME_FIELD_NUMBER: _ClassVar[int]
     USERNAME_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
     auth_token: str
     message: str
+    recipient_username: str
     username: str
     version: int
-    def __init__(self, version: _Optional[int] = ..., auth_token: _Optional[str] = ..., username: _Optional[str] = ..., message: _Optional[str] = ...) -> None: ...
+    def __init__(self, version: _Optional[int] = ..., auth_token: _Optional[str] = ..., username: _Optional[str] = ..., recipient_username: _Optional[str] = ..., message: _Optional[str] = ...) -> None: ...
 
-class PingReply(_message.Message):
-    __slots__ = ["error_code", "version"]
+class RefreshReply(_message.Message):
+    __slots__ = ["error_code", "message", "version"]
     ERROR_CODE_FIELD_NUMBER: _ClassVar[int]
-    VERSION_FIELD_NUMBER: _ClassVar[int]
-    error_code: str
-    version: int
-    def __init__(self, version: _Optional[int] = ..., error_code: _Optional[str] = ...) -> None: ...
-
-class PingRequest(_message.Message):
-    __slots__ = ["message", "version"]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
+    error_code: str
     message: str
     version: int
-    def __init__(self, version: _Optional[int] = ..., message: _Optional[str] = ...) -> None: ...
+    def __init__(self, version: _Optional[int] = ..., message: _Optional[str] = ..., error_code: _Optional[str] = ...) -> None: ...
+
+class RefreshRequest(_message.Message):
+    __slots__ = ["auth_token", "username", "version"]
+    AUTH_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    USERNAME_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    auth_token: str
+    username: str
+    version: int
+    def __init__(self, version: _Optional[int] = ..., auth_token: _Optional[str] = ..., username: _Optional[str] = ...) -> None: ...

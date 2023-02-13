@@ -21,10 +21,10 @@ class ChatServerStub(object):
                 request_serializer=chat__pb2.MessageRequest.SerializeToString,
                 response_deserializer=chat__pb2.MessageReply.FromString,
                 )
-        self.DeliverMessage = channel.unary_unary(
-                '/helloworld.ChatServer/DeliverMessage',
-                request_serializer=chat__pb2.PingRequest.SerializeToString,
-                response_deserializer=chat__pb2.PingReply.FromString,
+        self.DeliverMessages = channel.unary_stream(
+                '/helloworld.ChatServer/DeliverMessages',
+                request_serializer=chat__pb2.RefreshRequest.SerializeToString,
+                response_deserializer=chat__pb2.RefreshReply.FromString,
                 )
         self.Login = channel.unary_unary(
                 '/helloworld.ChatServer/Login',
@@ -59,7 +59,7 @@ class ChatServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def DeliverMessage(self, request, context):
+    def DeliverMessages(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -97,10 +97,10 @@ def add_ChatServerServicer_to_server(servicer, server):
                     request_deserializer=chat__pb2.MessageRequest.FromString,
                     response_serializer=chat__pb2.MessageReply.SerializeToString,
             ),
-            'DeliverMessage': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeliverMessage,
-                    request_deserializer=chat__pb2.PingRequest.FromString,
-                    response_serializer=chat__pb2.PingReply.SerializeToString,
+            'DeliverMessages': grpc.unary_stream_rpc_method_handler(
+                    servicer.DeliverMessages,
+                    request_deserializer=chat__pb2.RefreshRequest.FromString,
+                    response_serializer=chat__pb2.RefreshReply.SerializeToString,
             ),
             'Login': grpc.unary_unary_rpc_method_handler(
                     servicer.Login,
@@ -152,7 +152,7 @@ class ChatServer(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def DeliverMessage(request,
+    def DeliverMessages(request,
             target,
             options=(),
             channel_credentials=None,
@@ -162,9 +162,9 @@ class ChatServer(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/DeliverMessage',
-            chat__pb2.PingRequest.SerializeToString,
-            chat__pb2.PingReply.FromString,
+        return grpc.experimental.unary_stream(request, target, '/helloworld.ChatServer/DeliverMessages',
+            chat__pb2.RefreshRequest.SerializeToString,
+            chat__pb2.RefreshReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
