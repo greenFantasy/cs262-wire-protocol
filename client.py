@@ -141,7 +141,7 @@ class ClientApplication:
             )
             
             resp = self.client_stub.ListAccounts(list_packet)
-            self.messages.insert(END, resp.account_names)
+            self.messages.insert(END, resp.account_names + "\n")
             
         if cmd_type == "DELETE":
             del_packet = chat_pb2.DeleteAccountRequest(version=1,
