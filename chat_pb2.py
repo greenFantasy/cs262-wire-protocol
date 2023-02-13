@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nchat.proto\x12\nhelloworld\"\x1e\n\x0eMessageRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x1f\n\x0cMessageReply\x12\x0f\n\x07message\x18\x01 \x01(\t2\xa1\x01\n\nChatServer\x12\x42\n\x08SayHello\x12\x1a.helloworld.MessageRequest\x1a\x18.helloworld.MessageReply\"\x00\x12O\n\x13SayHelloStreamReply\x12\x1a.helloworld.MessageRequest\x1a\x18.helloworld.MessageReply\"\x00\x30\x01\x42\x36\n\x1aio.grpc.modules.chatserverB\x0f\x43hatServerProtoP\x01\xa2\x02\x04\x43HSRb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nchat.proto\x12\nhelloworld\"X\n\x0eMessageRequest\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nauth_token\x18\x02 \x01(\t\x12\x10\n\x08username\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\"3\n\x0cMessageReply\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nerror_code\x18\x02 \x01(\t\"/\n\x0bPingRequest\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x0f\n\x07message\x18\x02 \x01(\t\"0\n\tPingReply\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nerror_code\x18\x02 \x01(\t\"C\n\x0cLoginRequest\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x10\n\x08username\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\"W\n\nLoginReply\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nerror_code\x18\x02 \x01(\t\x12\x12\n\nauth_token\x18\x03 \x01(\t\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\"]\n\x14\x41\x63\x63ountCreateRequest\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x10\n\x08username\x18\x02 \x01(\t\x12\x10\n\x08password\x18\x03 \x01(\t\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\"_\n\x12\x41\x63\x63ountCreateReply\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nerror_code\x18\x02 \x01(\t\x12\x12\n\nauth_token\x18\x03 \x01(\t\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\"v\n\x12ListAccountRequest\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nauth_token\x18\x02 \x01(\t\x12\x10\n\x08username\x18\x03 \x01(\t\x12\x1a\n\x12number_of_accounts\x18\x04 \x01(\x05\x12\r\n\x05regex\x18\x05 \x01(\t\"N\n\x10ListAccountReply\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nerror_code\x18\x02 \x01(\t\x12\x15\n\raccount_names\x18\x03 \x01(\t\"M\n\x14\x44\x65leteAccountRequest\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nauth_token\x18\x02 \x01(\t\x12\x10\n\x08username\x18\x03 \x01(\t\"9\n\x12\x44\x65leteAccountReply\x12\x0f\n\x07version\x18\x01 \x01(\x05\x12\x12\n\nerror_code\x18\x02 \x01(\t2\xce\x03\n\nChatServer\x12\x45\n\x0bSendMessage\x12\x1a.helloworld.MessageRequest\x1a\x18.helloworld.MessageReply\"\x00\x12\x42\n\x0e\x44\x65liverMessage\x12\x17.helloworld.PingRequest\x1a\x15.helloworld.PingReply\"\x00\x12;\n\x05Login\x12\x18.helloworld.LoginRequest\x1a\x16.helloworld.LoginReply\"\x00\x12S\n\rCreateAccount\x12 .helloworld.AccountCreateRequest\x1a\x1e.helloworld.AccountCreateReply\"\x00\x12N\n\x0cListAccounts\x12\x1e.helloworld.ListAccountRequest\x1a\x1c.helloworld.ListAccountReply\"\x00\x12S\n\rDeleteAccount\x12 .helloworld.DeleteAccountRequest\x1a\x1e.helloworld.DeleteAccountReply\"\x00\x42\x36\n\x1aio.grpc.modules.chatserverB\x0f\x43hatServerProtoP\x01\xa2\x02\x04\x43HSRb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'chat_pb2', globals())
@@ -22,9 +22,29 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\032io.grpc.modules.chatserverB\017ChatServerProtoP\001\242\002\004CHSR'
   _MESSAGEREQUEST._serialized_start=26
-  _MESSAGEREQUEST._serialized_end=56
-  _MESSAGEREPLY._serialized_start=58
-  _MESSAGEREPLY._serialized_end=89
-  _CHATSERVER._serialized_start=92
-  _CHATSERVER._serialized_end=253
+  _MESSAGEREQUEST._serialized_end=114
+  _MESSAGEREPLY._serialized_start=116
+  _MESSAGEREPLY._serialized_end=167
+  _PINGREQUEST._serialized_start=169
+  _PINGREQUEST._serialized_end=216
+  _PINGREPLY._serialized_start=218
+  _PINGREPLY._serialized_end=266
+  _LOGINREQUEST._serialized_start=268
+  _LOGINREQUEST._serialized_end=335
+  _LOGINREPLY._serialized_start=337
+  _LOGINREPLY._serialized_end=424
+  _ACCOUNTCREATEREQUEST._serialized_start=426
+  _ACCOUNTCREATEREQUEST._serialized_end=519
+  _ACCOUNTCREATEREPLY._serialized_start=521
+  _ACCOUNTCREATEREPLY._serialized_end=616
+  _LISTACCOUNTREQUEST._serialized_start=618
+  _LISTACCOUNTREQUEST._serialized_end=736
+  _LISTACCOUNTREPLY._serialized_start=738
+  _LISTACCOUNTREPLY._serialized_end=816
+  _DELETEACCOUNTREQUEST._serialized_start=818
+  _DELETEACCOUNTREQUEST._serialized_end=895
+  _DELETEACCOUNTREPLY._serialized_start=897
+  _DELETEACCOUNTREPLY._serialized_end=954
+  _CHATSERVER._serialized_start=957
+  _CHATSERVER._serialized_end=1419
 # @@protoc_insertion_point(module_scope)

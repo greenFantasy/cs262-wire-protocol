@@ -21,3 +21,7 @@ We have to mantain a list of the tokens that are valid, deliver to chat user eit
 
 For the future, we want to mantain message histories, delivery confirmation and auth extension based on activity. For now we are starting with individual messages to get the server to work in the future we might add message streams.  
 
+## Entry 1/12/2023 4:37 pm 
+
+In order to create a user account we have to keep track of metadata. We opt for the twitter type inbox system where messages are just queues waiting for the user like emails. We also enable a user metadata store that keeps track of all usernames, passwords and full names. Lastly, we have a token hub which in turn provides the much needed token to timestamp mapping so we can tell when a token has expired. 
+

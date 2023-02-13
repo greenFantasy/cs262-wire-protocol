@@ -7,6 +7,7 @@ import chat_pb2 as chat__pb2
 
 class ChatServerStub(object):
     """The greeting service definition.
+    Sends a greeting
     """
 
     def __init__(self, channel):
@@ -15,30 +16,74 @@ class ChatServerStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SayHello = channel.unary_unary(
-                '/helloworld.ChatServer/SayHello',
+        self.SendMessage = channel.unary_unary(
+                '/helloworld.ChatServer/SendMessage',
                 request_serializer=chat__pb2.MessageRequest.SerializeToString,
                 response_deserializer=chat__pb2.MessageReply.FromString,
                 )
-        self.SayHelloStreamReply = channel.unary_stream(
-                '/helloworld.ChatServer/SayHelloStreamReply',
-                request_serializer=chat__pb2.MessageRequest.SerializeToString,
-                response_deserializer=chat__pb2.MessageReply.FromString,
+        self.DeliverMessage = channel.unary_unary(
+                '/helloworld.ChatServer/DeliverMessage',
+                request_serializer=chat__pb2.PingRequest.SerializeToString,
+                response_deserializer=chat__pb2.PingReply.FromString,
+                )
+        self.Login = channel.unary_unary(
+                '/helloworld.ChatServer/Login',
+                request_serializer=chat__pb2.LoginRequest.SerializeToString,
+                response_deserializer=chat__pb2.LoginReply.FromString,
+                )
+        self.CreateAccount = channel.unary_unary(
+                '/helloworld.ChatServer/CreateAccount',
+                request_serializer=chat__pb2.AccountCreateRequest.SerializeToString,
+                response_deserializer=chat__pb2.AccountCreateReply.FromString,
+                )
+        self.ListAccounts = channel.unary_unary(
+                '/helloworld.ChatServer/ListAccounts',
+                request_serializer=chat__pb2.ListAccountRequest.SerializeToString,
+                response_deserializer=chat__pb2.ListAccountReply.FromString,
+                )
+        self.DeleteAccount = channel.unary_unary(
+                '/helloworld.ChatServer/DeleteAccount',
+                request_serializer=chat__pb2.DeleteAccountRequest.SerializeToString,
+                response_deserializer=chat__pb2.DeleteAccountReply.FromString,
                 )
 
 
 class ChatServerServicer(object):
     """The greeting service definition.
+    Sends a greeting
     """
 
-    def SayHello(self, request, context):
-        """Sends a greeting
-        """
+    def SendMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SayHelloStreamReply(self, request, context):
+    def DeliverMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Login(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateAccount(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListAccounts(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteAccount(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -47,15 +92,35 @@ class ChatServerServicer(object):
 
 def add_ChatServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SayHello': grpc.unary_unary_rpc_method_handler(
-                    servicer.SayHello,
+            'SendMessage': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendMessage,
                     request_deserializer=chat__pb2.MessageRequest.FromString,
                     response_serializer=chat__pb2.MessageReply.SerializeToString,
             ),
-            'SayHelloStreamReply': grpc.unary_stream_rpc_method_handler(
-                    servicer.SayHelloStreamReply,
-                    request_deserializer=chat__pb2.MessageRequest.FromString,
-                    response_serializer=chat__pb2.MessageReply.SerializeToString,
+            'DeliverMessage': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeliverMessage,
+                    request_deserializer=chat__pb2.PingRequest.FromString,
+                    response_serializer=chat__pb2.PingReply.SerializeToString,
+            ),
+            'Login': grpc.unary_unary_rpc_method_handler(
+                    servicer.Login,
+                    request_deserializer=chat__pb2.LoginRequest.FromString,
+                    response_serializer=chat__pb2.LoginReply.SerializeToString,
+            ),
+            'CreateAccount': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateAccount,
+                    request_deserializer=chat__pb2.AccountCreateRequest.FromString,
+                    response_serializer=chat__pb2.AccountCreateReply.SerializeToString,
+            ),
+            'ListAccounts': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListAccounts,
+                    request_deserializer=chat__pb2.ListAccountRequest.FromString,
+                    response_serializer=chat__pb2.ListAccountReply.SerializeToString,
+            ),
+            'DeleteAccount': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteAccount,
+                    request_deserializer=chat__pb2.DeleteAccountRequest.FromString,
+                    response_serializer=chat__pb2.DeleteAccountReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -66,10 +131,11 @@ def add_ChatServerServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class ChatServer(object):
     """The greeting service definition.
+    Sends a greeting
     """
 
     @staticmethod
-    def SayHello(request,
+    def SendMessage(request,
             target,
             options=(),
             channel_credentials=None,
@@ -79,14 +145,14 @@ class ChatServer(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/SayHello',
+        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/SendMessage',
             chat__pb2.MessageRequest.SerializeToString,
             chat__pb2.MessageReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def SayHelloStreamReply(request,
+    def DeliverMessage(request,
             target,
             options=(),
             channel_credentials=None,
@@ -96,8 +162,76 @@ class ChatServer(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/helloworld.ChatServer/SayHelloStreamReply',
-            chat__pb2.MessageRequest.SerializeToString,
-            chat__pb2.MessageReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/DeliverMessage',
+            chat__pb2.PingRequest.SerializeToString,
+            chat__pb2.PingReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Login(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/Login',
+            chat__pb2.LoginRequest.SerializeToString,
+            chat__pb2.LoginReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CreateAccount(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/CreateAccount',
+            chat__pb2.AccountCreateRequest.SerializeToString,
+            chat__pb2.AccountCreateReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListAccounts(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/ListAccounts',
+            chat__pb2.ListAccountRequest.SerializeToString,
+            chat__pb2.ListAccountReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteAccount(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/helloworld.ChatServer/DeleteAccount',
+            chat__pb2.DeleteAccountRequest.SerializeToString,
+            chat__pb2.DeleteAccountReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
