@@ -13,6 +13,7 @@ from tkinter import *
 from tkinter import simpledialog
 
 import wire_protocol as wp
+import pdb
 
 ADDRESS =  "localhost" # "10.250.240.43"
 PORT = 50051
@@ -79,8 +80,8 @@ class ClientApplication:
         
     def start(self):
         # TODO: Implement this!!!
-        mp.Thread(target=self.listen_loop, daemon=True).start()
         self.interface_setup()
+        mp.Thread(target=self.listen_loop, daemon=True).start()
         self.application_window.mainloop()
         
     
@@ -99,9 +100,8 @@ class ClientApplication:
                                                         username=self.username)
                 
                 msg = self.client_stub.DeliverMessages(auth_msg_request)
-                print(msg, msg.message)
                 if not msg.error_code:
-                    self.messages.insert(END, msg.message)
+                    self.messages.insert(END, msg.message + '\n')
                 time.sleep(1)
 
             
@@ -110,6 +110,7 @@ class ClientApplication:
         # setup up the UI for the specific chat inbox
         self.messages = Text()
         self.messages.pack(side=TOP)
+        self.messages.insert(END, "Welcome to the server!\n")
         
         # display the username for the current applicant
         self.display_username = Label(self.application_window, text=self.username)
@@ -151,7 +152,7 @@ class ClientApplication:
                                                  username=self.username,
                                                  recipient_username=recp)
             gui_msg_string = f"[me -> {recp}] {msg}\n"
-            self.messages.insert(END, gui_msg_string)
+            self.messages.insert(END, gui_msg_string + "\n")
             self.client_stub.SendMessage(msg_packet)
         
         if cmd_type == "LIST":

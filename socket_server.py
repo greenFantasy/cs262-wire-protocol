@@ -25,6 +25,12 @@ class ChatServer:
         
         # keeping track of time by standardizing to UTC
         self.utc_time_gen = datetime.datetime
+        
+        # user metadata lock
+        self.metadata_lock = mp.Lock()
+        
+        # inbox lock
+        self.inbox_lock = mp.Lock()
     
     def generate_token(self):
         token = os.urandom(self.token_length)
@@ -40,18 +46,19 @@ class ChatServer:
         if username not in self.token_hub.keys():
             return -1
         
-        stored_token, timestamp = self.token_hub[username]
-        
-        if stored_token != token:
-            return -1
-        
-        duration = self.utc_time_gen.now().timestamp() - timestamp
-        duration_in_hr = duration / 3600
-        
-        if duration_in_hr > 1.0:
-            return -1
-        
-        return 0
+        with self.metadata_lock:
+            stored_token, timestamp = self.token_hub[username]
+            
+            if stored_token != token:
+                return -1
+            
+            duration = self.utc_time_gen.now().timestamp() - timestamp
+            duration_in_hr = duration / 3600
+            
+            if duration_in_hr > 1.0:
+                return -1
+            
+            return 0
 
     def create_account(self, raw_bytes):
         request = wp.socket_types.AccountCreateRequest(raw_bytes)
@@ -62,66 +69,72 @@ class ChatServer:
                                 fullname="")
 
         username = request.username
-        if username in self.user_metadata_store.keys():
-            return wp.encode.AccountCreateReply(version=1,
-                                error_code="ERROR Username Already Exists",
-                                auth_token="",
-                                fullname="")
+        with self.metadata_lock:
+            if username in self.user_metadata_store.keys():
+                return wp.encode.AccountCreateReply(version=1,
+                                    error_code="ERROR Username Already Exists",
+                                    auth_token="",
+                                    fullname="")
+            
+            # get the password and do basic error checking
+            password = request.password
+            if self.validate_password(password) < 0:
+                return wp.encode.AccountCreateReply(version=1,
+                                    error_code="ERROR Invalid Passcode",
+                                    auth_token="",
+                                    fullname="")
+            
+            # prepare metadata
+            fullname = request.fullname
+            token = self.generate_token()
+            timestamp = self.utc_time_gen.now().timestamp()
         
-        # get the password and do basic error checking
-        password = request.password
-        if self.validate_password(password) < 0:
-            return wp.encode.AccountCreateReply(version=1,
-                                error_code="ERROR Invalid Passcode",
-                                auth_token="",
-                                fullname="")
         
-        # prepare metadata
-        fullname = request.fullname
-        token = self.generate_token()
-        timestamp = self.utc_time_gen.now().timestamp()
-        
-        # create user metadata
-        self.user_metadata_store[username] = (password, fullname)
-        # create user chat inbox
-        self.user_inbox[username] = []
-        # register user in token hub / stores last given token
-        self.token_hub[username] = (token, timestamp)
-        
-        return wp.encode.AccountCreateReply(version=1,
-                                           error_code="",
-                                           auth_token=token,
-                                           fullname=fullname)
+            # create user metadata
+            self.user_metadata_store[username] = (password, fullname)
+            # register user in token hub / stores last given token
+            self.token_hub[username] = (token, timestamp)
+            
+            with self.inbox_lock:
+            # create user chat inbox
+                self.user_inbox[username] = []
+                
+                return wp.encode.AccountCreateReply(version=1,
+                                                error_code="",
+                                                auth_token=token,
+                                                fullname=fullname)
     
     def login(self, raw_bytes):
         request = wp.socket_types.LoginRequest(raw_bytes)
 
         # get the given username and do basic error checking
         username = request.username
-        if username not in self.user_metadata_store.keys():
-            return wp.encode.LoginReply(version=1,
-                                error_code="ERROR Username Invalid",
-                                auth_token="",
-                                fullname="")
+        
+        with self.metadata_lock:
+            if username not in self.user_metadata_store.keys():
+                return wp.encode.LoginReply(version=1,
+                                    error_code="ERROR Username Invalid",
+                                    auth_token="",
+                                    fullname="")
+                
+            # basic password match
+            password = request.password
+            if password != self.user_metadata_store[username][0]:
+                return wp.encode.LoginReply(version=1,
+                                    error_code="ERROR Password Invalid",
+                                    auth_token="",
+                                    fullname="")
             
-        # basic password match
-        password = request.password
-        if password != self.user_metadata_store[username][0]:
+            # generate new token
+            token = self.generate_token()
+            timestamp = self.utc_time_gen.now().timestamp()
+        
+            # register token in token hub
+            self.token_hub[username] = (token, timestamp)
             return wp.encode.LoginReply(version=1,
-                                error_code="ERROR Password Invalid",
-                                auth_token="",
-                                fullname="")
-        
-        # generate new token
-        token = self.generate_token()
-        timestamp = self.utc_time_gen.now().timestamp()
-        
-        # register token in token hub
-        self.token_hub[username] = (token, timestamp)
-        return wp.encode.LoginReply(version=1,
-                                   error_code="",
-                                   auth_token=token,
-                                   fullname=self.user_metadata_store[username][1])
+                                    error_code="",
+                                    auth_token=token,
+                                    fullname=self.user_metadata_store[username][1])
 
     def receive_message(self, raw_bytes):
         request = wp.socket_types.MessageRequest(raw_bytes)
@@ -129,6 +142,8 @@ class ChatServer:
         token = request.auth_token
         username = request.username
         recipient = request.recipient_username
+        
+        # note that validate token is protected by the metadata lock
         if self.validate_token(username=username,
                               token=token) < 0:
             return wp.encode.MessageReply(version=1,
@@ -136,11 +151,17 @@ class ChatServer:
         
         message_string = request.message
         modified_string = f"[{username}]: {message_string}"
-        if recipient not in self.user_inbox.keys():
-            return wp.encode.MessageReply(version=1,
-                                         error_code="Invalid Recipient")
-        self.user_inbox[recipient].append(modified_string)
-        return wp.encode.MessageReply(version=1, error_code="")
+        
+        # protect inbox access with lock
+        with self.inbox_lock:
+
+            if recipient not in self.user_inbox.keys():
+                return wp.encode.MessageReply(version=1,
+                                            error_code="Invalid Recipient")
+            
+            
+            self.user_inbox[recipient].append(modified_string)
+            return wp.encode.MessageReply(version=1, error_code="")
 
     def list_accounts(self, raw_bytes):
         request = wp.socket_types.ListAccountRequest(raw_bytes)
@@ -152,13 +173,16 @@ class ChatServer:
             return wp.encode.ListAccountReply(version=1,
                                              error_code="Invalid token",
                                              account_names="")
-        list_of_usernames = self.user_metadata_store.keys()
+        
+        
+        with self.metadata_lock:
+            list_of_usernames = self.user_metadata_store.keys()
         
         filtered_list = list_of_usernames
         # search using filter
         regex = request.regex
         if len(regex) != 0:
-            r = re.compile(f".*{regex}")
+            r = re.compile(f"{regex}")
             # filter based on compiled regex
             filtered_list = list(filter(r.match, list_of_usernames))
         filtered_string = ", ".join(filtered_list[:100])
@@ -178,12 +202,15 @@ class ChatServer:
                                                 error_code="Invalid token")
             
         # delete all relevant metadata
-        self.token_hub.pop(username)
-        self.user_inbox.pop(username)
-        self.user_metadata_store.pop(username)
+        with self.metadata_lock:
+            self.token_hub.pop(username)
+            self.user_metadata_store.pop(username)
+            
+            with self.inbox_lock:
+                self.user_inbox.pop(username)
         
-        return wp.encode.DeleteAccountReply(version=1, 
-                                            error_code="")
+                return wp.encode.DeleteAccountReply(version=1, 
+                                                error_code="")
     
     def deliver_messages(self, raw_bytes):
         request = wp.socket_types.RefreshRequest(raw_bytes)
@@ -197,17 +224,19 @@ class ChatServer:
                                             error_code="Invalid Token"
                                             )
         # Check if there are any new messages
-        if len(self.user_inbox[username]) > 0:
-            msg = self.user_inbox[username].pop(0)
-            return wp.encode.RefreshReply(version=1, 
-                                          message=msg,
-                                          error_code=""
-                                          )
-        else:
-            return wp.encode.RefreshReply(version=1, 
-                                          message="",
-                                          error_code="No new message"
-                                          )
+        with self.inbox_lock:
+            if len(self.user_inbox[username]) > 0:
+                msg = "\n".join(self.user_inbox[username])
+                self.user_inbox[username] = []
+                return wp.encode.RefreshReply(version=1, 
+                                            message=msg,
+                                            error_code=""
+                                            )
+            else:
+                return wp.encode.RefreshReply(version=1, 
+                                            message="",
+                                            error_code="No new message"
+                                            )
 
 
     def handle_new_connection(self, c : socket.socket, addr):

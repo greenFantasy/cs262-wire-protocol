@@ -12,6 +12,7 @@ import datetime
 import grpc
 import chat_pb2
 import chat_pb2_grpc
+import threading as mp
 
 
 class ChatServer(chat_pb2_grpc.ChatServerServicer):
@@ -31,6 +32,12 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         # keeping track of time by standardizing to UTC
         self.utc_time_gen = datetime.datetime
         
+        # user metadata lock
+        self.metadata_lock = mp.Lock()
+        
+        # inbox lock
+        self.inbox_lock = mp.Lock()
+        
     def ValidatePassword(self, password):
         if type(password) != str:
             return -1
@@ -42,24 +49,24 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         return binascii.hexlify(token).decode()
     
     def ValidateToken(self, username, token):
-        if username not in self.token_hub.keys():
-            return -1
-        
-        stored_token, timestamp = self.token_hub[username]
-        
-        if stored_token != token:
-            return -1
-        
-        duration = self.utc_time_gen.now().timestamp() - timestamp
-        duration_in_hr = duration / 3600
-        
-        if duration_in_hr > 1.0:
-            return -1
-        
-        return 0
+        with self.metadata_lock:
+            if username not in self.token_hub.keys():
+                return -1
+            
+            stored_token, timestamp = self.token_hub[username]
+            
+            if stored_token != token:
+                return -1
+            
+            duration = self.utc_time_gen.now().timestamp() - timestamp
+            duration_in_hr = duration / 3600
+            
+            if duration_in_hr > 1.0:
+                return -1
+            
+            return 0
 
     def SendMessage(self, request, context):
-        print(request)
         token = request.auth_token
         username = request.username
         recipient = request.recipient_username
@@ -70,14 +77,20 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         
         message_string = request.message
         modified_string = f"[{username}]: {message_string}"
-        if recipient not in self.user_inbox.keys():
-            return chat_pb2.MessageReply(version=1,
-                                         error_code="Invalid Recipient")
-        self.user_inbox[recipient].append(modified_string)
-        return chat_pb2.MessageReply(version=1, error_code="")
+        
+        with self.inbox_lock:
+            if recipient not in self.user_inbox.keys():
+                return chat_pb2.MessageReply(version=1,
+                                            error_code="Invalid Recipient")
+            self.user_inbox[recipient].append(modified_string)
+            return chat_pb2.MessageReply(version=1, error_code="")
+        
+    
+    def CheckInboxLength(self, username):
+        with self.inbox_lock:
+            return len(self.user_inbox[username])
 
     def DeliverMessages(self, request, context):
-        print(request)
         # every client will end up running this
         while True:
             token = request.auth_token
@@ -87,79 +100,84 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
                 return chat_pb2.RefreshReply(version=1,
                                              error_code="Invalid Token")
             # Check if there are any new messages
-            while len(self.user_inbox[username]) > 0:
-                msg = self.user_inbox[username].pop(0)
+            while self.CheckInboxLength(username=username) > 0:
+                with self.inbox_lock:
+                    msg = self.user_inbox[username].pop(0)
+                
+                # ended lock context before yield
                 yield chat_pb2.RefreshReply(version=1, 
                                             error_code="",
                                             message=msg)
 
     def Login(self, request, context):
-        print(request)
         # get the given username and do basic error checking
         username = request.username
-        if username not in self.user_metadata_store.keys():
-            return chat_pb2.LoginReply(
-                                error_code="ERROR Username Invalid",
-                                auth_token="",
-                                fullname="")
+        
+        with self.metadata_lock:
+            if username not in self.user_metadata_store.keys():
+                return chat_pb2.LoginReply(
+                                    error_code="ERROR Username Invalid",
+                                    auth_token="",
+                                    fullname="")
+                
+            # basic password match
+            password = request.password
+            if password != self.user_metadata_store[username][0]:
+                return chat_pb2.LoginReply(
+                                    error_code="ERROR Password Invalid",
+                                    auth_token="",
+                                    fullname="")
             
-        # basic password match
-        password = request.password
-        if password != self.user_metadata_store[username][0]:
-            return chat_pb2.LoginReply(
-                                error_code="ERROR Password Invalid",
-                                auth_token="",
-                                fullname="")
-        
-        # generate new token
-        token = self.GenerateToken()
-        timestamp = self.utc_time_gen.now().timestamp()
-        
-        # register token in token hub
-        self.token_hub[username] = (token, timestamp)
-        return chat_pb2.LoginReply(version=1,
-                                   error_code="",
-                                   auth_token=token,
-                                   fullname=self.user_metadata_store[username][1])
+            # generate new token
+            token = self.GenerateToken()
+            timestamp = self.utc_time_gen.now().timestamp()
+            
+            # register token in token hub
+            self.token_hub[username] = (token, timestamp)
+            return chat_pb2.LoginReply(version=1,
+                                    error_code="",
+                                    auth_token=token,
+                                    fullname=self.user_metadata_store[username][1])
 
     def CreateAccount(self, request, context):
-        print(request)
         # get the given username and do basic error checking
         username = request.username
-        if username in self.user_metadata_store.keys():
-            return chat_pb2.AccountCreateReply(version=1, 
-                                error_code="ERROR Username Already Exists",
-                                auth_token="",
-                                fullname="")
         
-        # get the password and do basic error checking
-        password = request.password
-        if self.ValidatePassword(password) < 0:
-            return chat_pb2.AccountCreateReply(version=1, 
-                                error_code="ERROR Invalid Passcode",
-                                auth_token="",
-                                fullname="")
-        
-        # prepare metadata
-        fullname = request.fullname
-        token = self.GenerateToken()
-        timestamp = self.utc_time_gen.now().timestamp()
-        
-        # create user metadata
-        self.user_metadata_store[username] = (password, fullname)
-        # create user chat inbox
-        self.user_inbox[username] = []
-        # register user in token hub / stores last given token
-        self.token_hub[username] = (token, timestamp)
-        
-        return chat_pb2.AccountCreateReply(version=1,
-                                           error_code="",
-                                           auth_token=token,
-                                           fullname=fullname)
+        with self.metadata_lock:
+            if username in self.user_metadata_store.keys():
+                return chat_pb2.AccountCreateReply(version=1, 
+                                    error_code="ERROR Username Already Exists",
+                                    auth_token="",
+                                    fullname="")
+            
+            # get the password and do basic error checking
+            password = request.password
+            if self.ValidatePassword(password) < 0:
+                return chat_pb2.AccountCreateReply(version=1, 
+                                    error_code="ERROR Invalid Passcode",
+                                    auth_token="",
+                                    fullname="")
+            
+            # prepare metadata
+            fullname = request.fullname
+            token = self.GenerateToken()
+            timestamp = self.utc_time_gen.now().timestamp()
+            
+            # create user metadata
+            self.user_metadata_store[username] = (password, fullname)
+            # register user in token hub / stores last given token
+            self.token_hub[username] = (token, timestamp)
+            
+            with self.inbox_lock:
+                # create user chat inbox
+                self.user_inbox[username] = []
+                return chat_pb2.AccountCreateReply(version=1,
+                                                error_code="",
+                                                auth_token=token,
+                                                fullname=fullname)
         
 
     def ListAccounts(self, request, context):
-        print(request)
         token = request.auth_token
         username = request.username
         if self.ValidateToken(username=username,
@@ -167,7 +185,8 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
             return chat_pb2.ListAccountReply(version=1,
                                              error_code="Invalid token",
                                              account_names="")
-        list_of_usernames = self.user_metadata_store.keys()
+        with self.metadata_lock:
+            list_of_usernames = self.user_metadata_store.keys()
         
         filtered_list = list_of_usernames
         # search using filter
@@ -191,13 +210,14 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
                                              error_code="Invalid token")
             
         # delete all relevant metadata
-        self.token_hub.pop(username)
-        self.user_inbox.pop(username)
-        self.user_metadata_store.pop(username)
-        
-        return chat_pb2.DeleteAccountReply(version=1,
-                                           error_code="")
-        
+        with self.metadata_lock:
+            self.token_hub.pop(username)
+            self.user_metadata_store.pop(username)
+            with self.inbox_lock:
+                self.user_inbox.pop(username)
+                return chat_pb2.DeleteAccountReply(version=1,
+                                                error_code="")
+            
         
 def serve():
     port = '50051'
