@@ -71,5 +71,24 @@ grpc._channel._MultiThreadedRendezvous: <_MultiThreadedRendezvous of RPC that te
         debug_error_string = "UNKNOWN:Error received from peer ipv6:%5B::1%5D:50051 {created_time:"2023-02-13T02:18:43.129338-05:00", grpc_status:2, grpc_message:"Exception iterating responses: \'float\' object has no attribute \'total_seconds\'"}"
 ```
 
+# Entry 2/16 12:00pm
 
+Todos: 
+  - Handle GRPC errors on both client and server side
+    - Check error codes on client side + show on the UI
+    - Ensure no casting errors + crashing opportunities on server side
+  - Integrate socket server and socket client into existing stack
+    - Client disconnection should not crash server
+      - Possible solutions: Timeout errors, look at the last TCP data sent
+        on this connection
+  - Logic for decoding
+    - Client-side wire protocol
+    - 4 bytes -> opcode (which dataclass the rest of this message refers to)
+    - Client should ignore message if not decodable
+  
 
+# Entry 2/19
+For sockets, interesting problem of how we want to deal with clients violently disconnecting (by this, meaning disconnecting with no trace). We can either be constantly sending small messages back and forth between server and client once a connection is opened, and as soon as those stop being sent / received (with small timeout), we can end the connection on the server side. Or, we can have not send back and forths and instead just have a larger timeout (~60 min), such that as soon as the timeout is violated, we assume the client has "violently" disconnected and we end the connection. A 60 minute large timeout also corresponds to the liveliness of user auth tokens, although it has the con of leaving a connection open potentially long after it has been dead on the client side and also cutting a connection that is actually still open. It's unclear which implementation we should be using, but currently we will go with the large timeout option due to its ease of implementation.
+
+# Entry 2/19 - later
+It seems like grpc automatically takes care of pairing. If two threads from the same machine each make a request, grpc will pair them correctly. I'm curious if we need to deal with the pairing in sockets. My intuition tells me no, since it seems like quite an annoying, nontrivial problem, and instead each thread / connection is given a unique port and receives a unique message.

@@ -11,11 +11,15 @@ import threading as mp
 from tkinter import *
 from tkinter import simpledialog
 
-ADDRESS = "localhost"
-PORT = 50051
+import wire_protocol as wp
+
+ADDRESS =  "localhost" # "10.250.240.43"
+PORT = 2048
 
 class ClientApplication:
-    def __init__(self, username, 
+    def __init__(self, 
+                 use_grpc, # If True, use grpc, if False, use sockets
+                 username, 
                  password, 
                  fullname,
                  address, 
@@ -24,6 +28,7 @@ class ClientApplication:
                  token=None,
                  account_status="yes"):
         
+        self.use_grpc = use_grpc
         # save user metadata
         self.username = username
         self.password = password
@@ -38,15 +43,20 @@ class ClientApplication:
         self.port = port
         
         # create channel
-        self.channel = grpc.insecure_channel(f"{self.address}:{self.port}")
-        self.client_stub = chat_pb2_grpc.ChatServerStub(self.channel)
+        if self.use_grpc:
+            self.channel = grpc.insecure_channel(f"{self.address}:{self.port}")
+            self.client_stub = chat_pb2_grpc.ChatServerStub(self.channel)
+            self.message_creator = chat_pb2
+        else:
+            self.message_creator = wp.encode
+            self.client_stub = wp.client_stub.ChatServerStub(self.address, self.port)
         
         # get token if there is none
         self.token = token
         if self.token == None:
             resp = None
             if account_status == "no":
-                create_msg = chat_pb2.AccountCreateRequest(
+                create_msg = self.message_creator.AccountCreateRequest(
                     version=1,
                     username=self.username,
                     password=self.password,
@@ -54,7 +64,7 @@ class ClientApplication:
                 )
                 resp = self.client_stub.CreateAccount(create_msg)
             else:
-                login_msg = chat_pb2.LoginRequest(version=1,
+                login_msg = self.message_creator.LoginRequest(version=1,
                                                 username=self.username,
                                                 password=self.password)
                 resp = self.client_stub.Login(login_msg)
@@ -67,13 +77,13 @@ class ClientApplication:
                 self.token = resp.auth_token
         
     def start(self):
+        # TODO: Implement this!!!
         mp.Thread(target=self.listen_loop, daemon=True).start()
         self.interface_setup()
         self.application_window.mainloop()
         
-    
     def listen_loop(self):
-        auth_msg_request = chat_pb2.RefreshRequest(version=1, 
+        auth_msg_request = self.message_creator.RefreshRequest(version=1, 
                                                    auth_token=self.token,
                                                    username=self.username)
         
@@ -121,7 +131,7 @@ class ClientApplication:
             msg = self.message_input.get()
             recp = self.recp_input.get()
             # TODO put checking of size of message here
-            msg_packet = chat_pb2.MessageRequest(version=1,
+            msg_packet = self.message_creator.MessageRequest(version=1,
                                                  auth_token=self.token,
                                                  message=msg,
                                                  username=self.username,
@@ -132,7 +142,7 @@ class ClientApplication:
         
         if cmd_type == "LIST":
             recp = self.recp_input.get()
-            list_packet = chat_pb2.ListAccountRequest(
+            list_packet = self.message_creator.ListAccountRequest(
                 version=1,
                 auth_token=self.token,
                 username=self.username,
@@ -144,7 +154,7 @@ class ClientApplication:
             self.messages.insert(END, resp.account_names + "\n")
             
         if cmd_type == "DELETE":
-            del_packet = chat_pb2.DeleteAccountRequest(version=1,
+            del_packet = self.message_creator.DeleteAccountRequest(version=1,
                                                        auth_token=self.token,
                                                        username=self.username)
             resp = self.client_stub.DeleteAccount(del_packet)
@@ -158,6 +168,12 @@ class ClientApplication:
         
         
 def run():
+    use_grpc = None
+    while not (use_grpc == "y" or use_grpc == "n"):
+        use_grpc = input("Use grpc? (y/n): ")
+    use_grpc = (use_grpc == "y")
+    print(f"use_grpc: {use_grpc}")
+
     # NOTE(gRPC Python Team): .close() is possible on a channel and should be
     # used in circumstances in which the with statement does not fit the needs
     # of the code.
@@ -180,9 +196,9 @@ def run():
 
     root.deiconify() 
     
-    
-    
-    app = ClientApplication(username=username,
+    app = ClientApplication(
+                      use_grpc=use_grpc,
+                      username=username,
                       password=password,
                       fullname=fullname,
                       account_status=account_status,
