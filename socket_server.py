@@ -188,22 +188,26 @@ class ChatServer:
     def deliver_messages(self, raw_bytes):
         request = wp.socket_types.RefreshRequest(raw_bytes)
 
-        while True:
-            token = request.auth_token
-            username = request.username
-            if self.validate_token(username=username,
-                                token=token) < 0:
-                return wp.encode.RefreshReply(version=1,
-                                              message="",
-                                              error_code="Invalid Token"
-                                             )
-            # Check if there are any new messages
-            while len(self.user_inbox[username]) > 0:
-                msg = self.user_inbox[username].pop(0)
-                yield wp.encode.RefreshReply(version=1, 
-                                            message=msg,
-                                            error_code="",
+        token = request.auth_token
+        username = request.username
+        if self.validate_token(username=username,
+                            token=token) < 0:
+            return wp.encode.RefreshReply(version=1,
+                                            message="",
+                                            error_code="Invalid Token"
                                             )
+        # Check if there are any new messages
+        if len(self.user_inbox[username]) > 0:
+            msg = self.user_inbox[username].pop(0)
+            return wp.encode.RefreshReply(version=1, 
+                                          message=msg,
+                                          error_code=""
+                                          )
+        else:
+            return wp.encode.RefreshReply(version=1, 
+                                          message="",
+                                          error_code="No new message"
+                                          )
 
 
     def handle_new_connection(self, c : socket.socket, addr):
@@ -233,7 +237,8 @@ class ChatServer:
                 1: self.login,
                 2: self.receive_message,
                 3: self.list_accounts,
-                4: self.delete_account
+                4: self.delete_account,
+                5: self.deliver_messages
             }
 
             if opcode in opcode_map.keys():
@@ -252,7 +257,7 @@ if __name__ == "__main__":
     chatServer = ChatServer()
 
     host = "0.0.0.0"
-    port = 2048
+    port = 50051
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((host, port))

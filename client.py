@@ -5,6 +5,7 @@ import logging
 import grpc
 import chat_pb2
 import chat_pb2_grpc
+import time
 
 # use python-mp for true concurrency: this calls fork()
 import threading as mp
@@ -14,7 +15,7 @@ from tkinter import simpledialog
 import wire_protocol as wp
 
 ADDRESS =  "localhost" # "10.250.240.43"
-PORT = 2048
+PORT = 50051
 
 class ClientApplication:
     def __init__(self, 
@@ -82,13 +83,26 @@ class ClientApplication:
         self.interface_setup()
         self.application_window.mainloop()
         
+    
     def listen_loop(self):
-        auth_msg_request = self.message_creator.RefreshRequest(version=1, 
-                                                   auth_token=self.token,
-                                                   username=self.username)
-        
-        for msg in self.client_stub.DeliverMessages(auth_msg_request):
-            self.messages.insert(END, msg.message)
+        if self.use_grpc:
+            auth_msg_request = self.message_creator.RefreshRequest(version=1, 
+                                                    auth_token=self.token,
+                                                    username=self.username)
+            
+            for msg in self.client_stub.DeliverMessages(auth_msg_request):
+                self.messages.insert(END, msg.message)
+        else:
+            while True:
+                auth_msg_request = self.message_creator.RefreshRequest(version=1, 
+                                                        auth_token=self.token,
+                                                        username=self.username)
+                
+                msg = self.client_stub.DeliverMessages(auth_msg_request)
+                print(msg, msg.message)
+                if not msg.error_code:
+                    self.messages.insert(END, msg.message)
+                time.sleep(1)
 
             
     def interface_setup(self):

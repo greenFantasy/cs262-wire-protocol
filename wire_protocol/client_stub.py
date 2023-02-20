@@ -37,6 +37,5 @@ class ChatServerStub:
 
     def DeliverMessages(self, refresh_request):
         self.sck.send(refresh_request)
-        while True:
-            refresh_reply_bytes = self.sck.recv(1024)
-            yield socket_types.RefreshReply(refresh_reply_bytes)
+        refresh_reply_bytes = self.sck.recv(1024)
+        return socket_types.RefreshReply(refresh_reply_bytes)
