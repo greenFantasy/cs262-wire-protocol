@@ -272,7 +272,6 @@ class ChatServer:
 
             if opcode in opcode_map.keys():
                 result = opcode_map[opcode](data)
-                print(f"Sending status message to {addr}")
                 c.send(result)
             else:
                 # Invalid opcodes are dropped immediately, invalid opcodes

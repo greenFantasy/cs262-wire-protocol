@@ -1,5 +1,5 @@
 from client import ClientApplication
-from server import ChatServer
+from socket_server import ChatServer
 from concurrent import futures
 import signal
 import os
@@ -9,13 +9,14 @@ import grpc
 import chat_pb2
 import chat_pb2_grpc
 import time
+import socket
 
 import threading as th
 import multiprocessing as mp
 from tkinter import *
 
 
-PORT = '50051'
+PORT = 50051
 
 
 
@@ -30,7 +31,7 @@ def run_client_thread(username, password, fullname, account_status="no"):
     
     try:
         app = ClientApplication(
-                        use_grpc=True,
+                        use_grpc=False,
                         username=username,
                         password=password,
                         fullname=fullname,
@@ -108,22 +109,29 @@ def run_client_thread(username, password, fullname, account_status="no"):
                                                         username=app.username)
         
         expected_value = chr(((ord(app.username) - 97)+3)%4 + 97)
-        for msg in app.client_stub.DeliverMessages(auth_msg_request):
-            found = msg.message.split(": ")[-1]
-            check = found == expected_value
-            if check:
-                print(Fore.GREEN + "CONCURRENT MESSAGE RECIEVED: " 
-                    + str(check) + " Nodes: " 
-                    + f"[{found}] -> [{app.username}]" 
+        while True:
+            auth_msg_request = app.message_creator.RefreshRequest(version=1, 
+                                                    auth_token=app.token,
+                                                    username=app.username)
+            
+            msg = app.client_stub.DeliverMessages(auth_msg_request)
+            if len(msg.message) > 0:
+                found = msg.message.split(": ")[-1]
+                check = found == expected_value
+                if check:
+                    print(Fore.GREEN + "CONCURRENT MESSAGE RECIEVED: " 
+                        + str(check) + " Nodes: " 
+                        + f"[{found}] -> [{app.username}]" 
+                        + Style.RESET_ALL)
+                else:
+                    print(Fore.RED + "CONCURRENT MESSAGE FAILED: " 
+                        + str(check) 
+                        + " values: " 
+                        + found
+                        + " expected: "
+                        + ", ".join(expected_value)
                     + Style.RESET_ALL)
-            else:
-                print(Fore.RED + "CONCURRENT MESSAGE FAILED: " 
-                    + str(check) 
-                    + " values: " 
-                    + found
-                    + " expected: "
-                    + ", ".join(expected_value)
-                    + Style.RESET_ALL)
+            time.sleep(1)
             
             
     
@@ -217,12 +225,31 @@ def run_client_thread(username, password, fullname, account_status="no"):
         print(f"Process {app.username} exiting")
 
 
+def run_server():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("0.0.0.0", PORT))
+
+        print("socket binded to port", PORT)
+
+        # put the socket into listening mode
+        s.listen(10)
+        print("socket is listening")
+        
+        chatServer = ChatServer()
+        
+        while True:
+            # establish connection with client
+            c, addr = s.accept()      
+            print('Connected to :', addr[0], ':', addr[1])
+
+            # Start a new thread and return its identifier
+            th.Thread(target=chatServer.handle_new_connection, daemon=False, args=(c,addr)).start()
+            
 def run():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    chat_pb2_grpc.add_ChatServerServicer_to_server(ChatServer(), server)
-    server.add_insecure_port('[::]:' + PORT)
-    server.start()
-    print("Server started, listening on " + PORT)
+
+
+    server_thread = mp.Process(target=run_server)
+    server_thread.start()
 
     proc1 = mp.Process(target=run_client_thread, args=('a', 'b', 'a', 'no'))
     proc2 = mp.Process(target=run_client_thread, args=('b', 'c', 'b', 'no'))
@@ -233,8 +260,6 @@ def run():
     proc2.start()
     proc3.start()
     proc4.start()
-
-    server.wait_for_termination()
 
 if __name__ == '__main__':
     run()

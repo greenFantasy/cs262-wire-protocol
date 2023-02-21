@@ -44,6 +44,7 @@ class ClientApplication:
         self.address = address
         self.port = port
         
+        self.listen_loop = None
         # create channel
         if self.use_grpc:
             self.channel = grpc.insecure_channel(f"{self.address}:{self.port}")
@@ -81,7 +82,8 @@ class ClientApplication:
     def start(self):
         # TODO: Implement this!!!
         self.interface_setup()
-        mp.Thread(target=self.listen_loop, daemon=True).start()
+        self.listen_loop = mp.Thread(target=self.listen_loop, daemon=True)
+        self.listen_loop.start()
         self.application_window.mainloop()
         
     
