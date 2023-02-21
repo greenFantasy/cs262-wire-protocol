@@ -40,12 +40,17 @@ def run_client_thread(username, password, fullname, account_status="no"):
                         address="localhost",
                         port=PORT,
                         application_window=frame)
-        print(Fore.GREEN + "CREATE ACCOUNT TEST PASSED: " 
-              + str(app)
+        if len(app.token) > 0:
+            print(Fore.GREEN + "CREATE ACCOUNT TEST PASSED: " 
+                + str(app)
+                + Style.RESET_ALL)
+        else:
+            print(Fore.RED + "CREATE ACCOUNT TEST FAILED: token-invalid:" 
+              + str(app.token)
               + Style.RESET_ALL)
     except Exception as e:
         print(Fore.RED + "CREATE ACCOUNT TEST FAILED: " 
-              + str(app)
+              + "Client Application could not be intialized"
               + Style.RESET_ALL)
         
         return -1
@@ -74,13 +79,32 @@ def run_client_thread(username, password, fullname, account_status="no"):
               + resp.account_names 
               + Style.RESET_ALL)
     else:
-        print(Fore.RED + "FAILED: " 
+        print(Fore.RED + "LIST ACCOUNTS FAILED: " 
               + str(check) 
               + " values: " 
               + resp.account_names 
               + " expected: "
               + ", ".join(ground_truth)
               + Style.RESET_ALL)
+        
+    msg_packet = app.message_creator.MessageRequest(version=1,
+                                                 auth_token=app.token,
+                                                 message=f"{app.username}",
+                                                 username=app.username,
+                                                 recipient_username=app.password)
+    ret_val = app.client_stub.SendMessage(msg_packet)
+    
+    if len(ret_val.error_code) > 0:
+        print(Fore.RED + "CONCURRENT MESSAGE SEND FAILED: " 
+              + str(check) 
+              + " error_code: " 
+              + ret_val.error_code
+              + Style.RESET_ALL)
+    
+    time.sleep(0.5)
+    
+    print(app.messages[END])
+        
 
 
 def run():
