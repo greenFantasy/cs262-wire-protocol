@@ -151,7 +151,7 @@ def RunClientThread(
                 version=1, auth_token=app.token, username=app.username)
 
             msg = app.client_stub.DeliverMessages(auth_msg_request)
-            
+
             if msg.message and len(msg.message) > 0:
                 found = msg.message.split(": ")[-1]
                 if found:
@@ -225,11 +225,11 @@ def RunClientThread(
         ret_val = app.client_stub.SendMessage(msg_packet)
 
         if ret_val.error_code and len(ret_val.error_code) > 0:
-                print(Fore.RED + "CONCURRENT MESSAGE SEND FAILED: "
-                    + " error_code: "
-                    + ret_val.error_code
-                    + Style.RESET_ALL)
-                assert False
+            print(Fore.RED + "CONCURRENT MESSAGE SEND FAILED: "
+                  + " error_code: "
+                  + ret_val.error_code
+                  + Style.RESET_ALL)
+            assert False
         else:
             print(Fore.GREEN + "CONCURRENT MESSAGE SENT: "
                   + f"[{app.username}] -> [{app.password}]"
