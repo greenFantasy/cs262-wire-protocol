@@ -20,4 +20,4 @@ In order to prevent deadlocks, we maintain the following locking structure.
 
 (2) `app.inbox_lock`
 
-At any given time this is the order in which they are held the the reverse in which they are released. We use nested `with` statements to prevent locking scope issues. 
+At any given time this is the order in which they are held, and the reverse in which they are released. We use nested `with` statements to prevent locking scope issues. 
