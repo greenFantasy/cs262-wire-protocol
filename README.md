@@ -19,7 +19,7 @@ Click below for instructions on how to install the required modules.
 
 Below is our Chat Server design document.
 
-[Chat Server Design](docs/design.md)
+[Chat Server Design](docs/design_main.md)
 
 ## Engineering Notebook
 
