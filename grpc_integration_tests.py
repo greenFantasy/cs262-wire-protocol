@@ -144,31 +144,33 @@ def RunClientThread(
 
     # Define a function to listen for messages
     def Listen(app):
-        # Create a request for a message refresh
-        auth_msg_request = app.message_creator.RefreshRequest(
-            version=1, auth_token=app.token, username=app.username)
-        # Calculate an expected value for the message
-        expected_value = chr(((ord(app.username) - 97) + 3) % 4 + 97)
-        # Loop over the messages delivered by the client stub
-        for msg in app.client_stub.DeliverMessages(auth_msg_request):
-            # Extract the found value from the message
-            found = msg.message.split(": ")[-1]
-            if found:
-                # Print a message with the found value in green text
-                print(Fore.GREEN + "CONCURRENT MESSAGE RECEIVED: "
-                      + " Nodes: "
-                      + f"[{found}] -> [{app.username}]"
-                      + Style.RESET_ALL)
-            else:
-                # Print an error message with the expected and actual values in
-                # red text
-                print(Fore.RED + "CONCURRENT MESSAGE FAILED: "
-                      + str(check)
-                      + " values: "
-                      + found
-                      + " expected: "
-                      + ", ".join(expected_value)
-                      + Style.RESET_ALL)
+        while True:
+            # Create a request for a message refresh
+            auth_msg_request = app.message_creator.RefreshRequest(
+                version=1, auth_token=app.token, username=app.username)
+            # Calculate an expected value for the message
+            expected_value = chr(((ord(app.username) - 97) + 3) % 4 + 97)
+            # Loop over the messages delivered by the client stub
+            for msg in app.client_stub.DeliverMessages(auth_msg_request):
+                # Extract the found value from the message
+                found = msg.message.split(": ")[-1]
+                if found:
+                    # Print a message with the found value in green text
+                    print(Fore.GREEN + "CONCURRENT MESSAGE RECEIVED: "
+                        + " Nodes: "
+                        + f"[{found}] -> [{app.username}]"
+                        + Style.RESET_ALL)
+                else:
+                    # Print an error message with the expected and actual values in
+                    # red text
+                    print(Fore.RED + "CONCURRENT MESSAGE FAILED: "
+                        + str(check)
+                        + " values: "
+                        + found
+                        + " expected: "
+                        + ", ".join(expected_value)
+                        + Style.RESET_ALL)
+            time.sleep(1)
 
     # Create a thread to listen for messages
     listen_th = th.Thread(target=Listen, args=(app,), daemon=True)

@@ -6,7 +6,7 @@ import re
 import threading as mp
 from collections import defaultdict
 from concurrent import futures
-
+import time 
 import grpc
 
 import chat_pb2
@@ -122,7 +122,6 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         If the recipient does not exist, the function returns a
         `MessageReply` object with an error code indicating an invalid recipient.
         """
-        print(request)
         token = request.auth_token
         username = request.username
         recipient = request.recipient_username
@@ -179,24 +178,20 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         RefreshReply object with an empty message and an error code.
         """
         # every client will end up running this
-        while True:
-            print(request)
-            token = request.auth_token
-            username = request.username
-            if self.ValidateToken(username=username,
-                                  token=token) < 0:
-                return chat_pb2.RefreshReply(version=1,
-                                             error_code="Invalid Token")
-            # Check if there are any new messages
-            while self.CheckInboxLength(username=username) > 0:
-                with self.inbox_lock:
-                    msg = self.user_inbox[username].pop(0)
-                    print(msg)
-
-                # ended lock context before yield
-                yield chat_pb2.RefreshReply(version=1,
-                                            error_code="",
-                                            message=msg)
+        token = request.auth_token
+        username = request.username
+        if self.ValidateToken(username=username,
+                                token=token) < 0:
+            return chat_pb2.RefreshReply(version=1,
+                                            error_code="Invalid Token")
+        # Check if there are any new messages
+        while self.CheckInboxLength(username=username) > 0:
+            with self.inbox_lock:
+                msg = self.user_inbox[username].pop(0)
+            # ended lock context before yield
+            yield chat_pb2.RefreshReply(version=1,
+                                        error_code="",
+                                        message=msg)
 
     def Login(self, request, context) -> chat_pb2.LoginReply:
         """

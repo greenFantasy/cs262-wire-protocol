@@ -130,6 +130,8 @@ it can handle malicious messages sent to it.
 
 It looks like only the CreateClientAccount code in the socket server was prepped to handle malicious messages, I forgot to add that to the rest of the messages. Perhaps we should be unit testing this behavior? Either way the code should be fixed now, malicious messages sent to the socket server should return an error code.
 
+I found out that when the listening thread is not cleaned up properly then the waiting messages are not properly recieved either. 
+
 ## Entry 2/19/2023 11:30 pm
 
 Caught a bug that allowed the socket based server to crach because the connection error was not handled well and the handler failed due to reset. We also caught a bug with concurrent accesses on deletion. Lastly, we were able to solve a couple of UI bugs that plagued our system.

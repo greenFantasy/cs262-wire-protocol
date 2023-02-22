@@ -42,8 +42,8 @@ class ClientApplication:
         # save server address
         self.address = address
         self.port = port
-
-        self.ListenLoop = None
+        self.listen_loop = None
+        
         # create channel
         if self.use_grpc:
             self.channel = grpc.insecure_channel(f"{self.address}:{self.port}")
@@ -97,11 +97,14 @@ class ClientApplication:
             None
         """
         self.InterfaceSetup()
-        self.ListenLoop = mp.Thread(target=self.ListenLoop, daemon=True)
-        self.ListenLoop.start()
+        event = mp.Event()
+        self.listen_loop = mp.Thread(target=self.ListenLoop, args=(event,), daemon=True)
+        self.listen_loop.start()
         self.application_window.mainloop()
+        event.set()
+        self.listen_loop.join()
 
-    def ListenLoop(self) -> None:
+    def ListenLoop(self, event) -> None:
         """
         Listens for new messages intended for the client's user.
         If `use_grpc` is True, it listens for new messages using gRPC.
@@ -114,20 +117,23 @@ class ClientApplication:
             None
         """
         if self.use_grpc:
-            auth_msg_request = self.message_creator.RefreshRequest(
-                version=1, auth_token=self.token, username=self.username)
-
-            for msg in self.client_stub.DeliverMessages(auth_msg_request):
-                self.messages.insert(END, msg.message)
-        else:
             while True:
                 auth_msg_request = self.message_creator.RefreshRequest(
                     version=1, auth_token=self.token, username=self.username)
 
-                msg = self.client_stub.DeliverMessages(auth_msg_request)
-                if not msg.error_code:
-                    self.messages.insert(END, msg.message + '\n')
-                time.sleep(1)
+                if event.is_set():
+                    break
+                if self.use_grpc:
+                    for msg in self.client_stub.DeliverMessages(auth_msg_request):
+                        self.messages.insert(END, msg.message + '\n')
+                else:
+                    msg = self.client_stub.DeliverMessages(auth_msg_request)
+                    if not msg.error_code:
+                        self.messages.insert(END, msg.message + '\n')
+                    
+                time.sleep(0.5)
+
+               
 
     def InterfaceSetup(self) -> None:
         """
