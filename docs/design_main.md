@@ -26,6 +26,14 @@ For the gRPC setup, we have a global pool of threads that we can use to handle i
 
 [Full Design Schematic](schematic.md)
 
+## (4) Testing Framework
+
+### Overview
+
+The code contains unit tests for chat server functionalities such as token generation, account creation, token verification, login, and message sending. The test suite also includes tests for account listing and deletion. Integration tests for concurrent message sending and receiving using multiple threads are also conducted. The integration tests check whether the application is able to create an account and login successfully, list the created account, send a message to another client application, and concurrently listen for incoming messages from other clients. If the integration tests pass, the function returns an integer value of 0, otherwise, an assertion error is raised, which stops the program.
+
+[Full Testing Details](testing.md)
+
 
 
 

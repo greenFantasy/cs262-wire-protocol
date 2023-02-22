@@ -42,3 +42,14 @@ python grpc_integration_tests.py
 
 ## Description of Integration Tests
 
+Our code test tests concurrency, specifically concurrent message sending and receiving, for a client application. It does this by running a set of integration tests using a ClientApplication object that is created with the given username, password, fullname, and account_status parameters.
+
+The integration tests check whether the application is able to create an account and login successfully, list the created account, send a message to another client application, and concurrently listen for incoming messages from other clients.
+
+To simulate concurrent message sending and receiving, the code creates two threads: one to listen for messages using the Listen function, and another to send messages using the SendMessage function. The Listen function runs in an infinite loop and waits for messages from other clients. The SendMessage function sends a message to another client and waits for a response.
+
+The code tests for concurrency by pausing the main thread for 2 seconds after sending a message, and then checking for the incoming message in the Listen function. If the message is received, it is printed as a success message. Otherwise, an error message is printed with the expected and actual values. We do this with 4 threads at the same time. 
+
+We also test on the effect of deleting an node from the loop of messages being sent and the ability for the server to handle lists, requests and messages sent to and from the processes without process "c". This test ensures that our locking and access system is consistent.
+
+If the integration tests pass successfully, the function returns an integer value of 0. If any of the tests fail, the function raises an assertion error, which stops the program.

@@ -110,16 +110,16 @@ Todos:
     - 4 bytes -> opcode (which dataclass the rest of this message refers to)
     - Client should ignore message if not decodable
 
-## Entry 2/18/2023 3:30 pm 
+## Entry 2/17/2023 3:30 pm 
 
 We finished deciding on how we would implement the sockets part of the server code now that we have the grpc part done. This required us to settle for how capable our sockets server could be and we have simplified our overall design.For the gRPC setup, we have a global pool of threads that we can use to handle incomimg connections for each request. We use a RPC stream response for a client's refresh thread. This returns a blocking iterator object that in turn takes the messages that the user has not gotten and forwards them to the user. On the other hand, we have the socket implementation that does not run as a dameon thread because it is essentially polling the inbox server with a timed loop that constantly asks for refreshed messages in return for a message update per refresh. 
 
 [Full Design Schematic](schematic.md) 
 
-## Entry 2/19/2023 12:00 pm
-For sockets, interesting problem of how we want to deal with clients violently disconnecting (by this, meaning disconnecting with no trace). We can either be constantly sending small messages back and forth between server and client once a connection is opened, and as soon as those stop being sent / received (with small timeout), we can end the connection on the server side. Or, we can have not send back and forths and instead just have a larger timeout (~60 min), such that as soon as the timeout is violated, we assume the client has "violently" disconnected and we end the connection. A 60 minute large timeout also corresponds to the liveliness of user auth tokens, although it has the con of leaving a connection open potentially long after it has been dead on the client side and also cutting a connection that is actually still open. It's unclear which implementation we should be using, but currently we will go with the large timeout option due to its ease of implementation.
+## Entry 2/18/2023 12:00 pm
+For sockets, interesting problem of how we want to deal with clients violently disconnecting (by this, meaning disconnecting with no trace). We can either be constantly sending small messages back and forth between server and client once a connection is opened, and as soon as those stop being sent / received (with small timeout), we can end the connection on the server side. Or, we can have not send back and forths and instead just have a larger timeout (~60 min), such that as soon as the timeout is violated, we assume the client has "violently" disconnected and we end the connection. A 60 minute large timeout also corresponds to the liveliness of user auth tokens, although it has the con of leaving a connection open potentialsy long after it has been dead on the client side and also cutting a connection that is actually still open. It's unclear which implementation we should be using, but currently we will go with the large timeout option due to its ease of implementation.
 
-## Entry 2/19/2023 6:00 pm
+## Entry 2/18/2023 6:00 pm
 It seems like grpc automatically takes care of pairing. If two threads from the same machine each make a request, grpc will pair them correctly. I'm curious if we need to deal with the pairing in sockets. My intuition tells me no, since it seems like quite an annoying, nontrivial problem, and instead each thread / connection is given a unique port and receives a unique message.
 
 ## Entry 2/19/2023 11:00 pm
@@ -129,3 +129,11 @@ but we will need to check to make sure the error handling is properly taken care
 it can handle malicious messages sent to it.
 
 It looks like only the CreateClientAccount code in the socket server was prepped to handle malicious messages, I forgot to add that to the rest of the messages. Perhaps we should be unit testing this behavior? Either way the code should be fixed now, malicious messages sent to the socket server should return an error code.
+
+## Entry 2/19/2023 11:30 pm
+
+Caught a bug that allowed the socket based server to crach because the connection error was not handled well and the handler failed due to reset. We also caught a bug with concurrent accesses on deletion. Lastly, we were able to solve a couple of UI bugs that plagued our system.
+
+We were able to solve these with our new testing framework. Our new code contains unit tests for chat server functionalities such as token generation, account creation, token verification, login, and message sending. The test suite also includes tests for account listing and deletion. Integration tests for concurrent message sending and receiving using multiple threads are also conducted. The integration tests check whether the application is able to create an account and login successfully, list the created account, send a message to another client application, and concurrently listen for incoming messages from other clients. If the integration tests pass, the function returns an integer value of 0, otherwise, an assertion error is raised, which stops the program.
+
+[Full Testing Details](testing.md)
