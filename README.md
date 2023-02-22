@@ -1,7 +1,5 @@
 # cs262-wire-protocol: WiredIN
 
-Aakash Mishra (aakamishra, amishra@college.harvard.edu), Rajat Mittal (greenFantasy, rajatmittal@college.harvard.edu)
-
 ## A Socket-Based and GRPC Based Simple Account-Managed Chat Server. 
 
 ## Installation Instructions
@@ -55,26 +53,41 @@ The terminal prompt will ask you for (y/n) for GRPC. Please type in "y" and then
 
 If you have made an account before (as in within the instance of the server running) then please type in yes. However, if it is your first time booting up the client then enter no. 
 
-![returning user prompt](docs/returning.png)
+![returning user prompt](docs/images/returning.png)
 
 Then enter your username:
 
-![username prompt](docs/username.png)
+![username prompt](docs/images/username.png)
 
 You can then chose an appropriate password.
 
-![password prompt](docs/password.png)
+![password prompt](docs/images/password.png)
 
 Finally add your name to complete the instance profile.
 
-![name prompt](docs/name.png)
+![name prompt](docs/images/name.png)
 
 This will intialize the chat window for you as follows:
 
-#TODO Aakash
+![init chat window](docs/images/init.png)
 
+You can then search up users that you want to message using the `LIST` option and a regular expression in the box that says sample message. In order to send your query, press enter once you are done typing in that box. You will then see something like this:
 
+![list output](docs/images/regex.png)
 
+You can then take the username of the person you would like to message and enter their username in the box that contains "Recipient Input". You can then type your message to them in the main box and press enter after selecting the `MSG` type. 
+
+![sending message](docs/images/send_msg.png)
+
+In order to delete your account, just select the delete type from the option bar and then press enter in the message bar. You should get a message like so. 
+
+![deleting account](docs/images/delete.png)
+
+After you delete the account, all other actions will be void because the client token will be deregistered. Hence the following message:
+
+![post delete](docs/images/post_delete.png)
+
+Close the window and open a new one! Have fun!
 
 
 
