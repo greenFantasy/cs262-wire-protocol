@@ -13,7 +13,6 @@ from tkinter import *
 from tkinter import simpledialog
 
 import wire_protocol as wp
-import pdb
 
 ADDRESS =  "localhost" # "10.250.240.43"
 PORT = 50051
