@@ -212,7 +212,9 @@ class ClientApplication:
             msg = self.message_input.get()
             self.message_input.delete(0, END)
             recp = self.recp_input.get()
-
+            if len(recp) > 50:
+                self.messages.insert(END, "[ERR] too many characters" + "\n")
+                return
             if len(msg) > MAX_CHAR_COUNT:
                 self.messages.insert(
                     END,
@@ -236,6 +238,9 @@ class ClientApplication:
 
         if cmd_type == "LIST":
             recp = self.message_input.get()
+            if len(recp) > 50:
+                self.messages.insert(END, "[ERR] too many characters" + "\n")
+                return
             list_packet = self.message_creator.ListAccountRequest(
                 version=1,
                 auth_token=self.token,
@@ -289,6 +294,10 @@ def Run() -> None:
     while account_status is None:
         account_status = simpledialog.askstring(
             "Returning User?", "Do you have an account? (yes/no)", parent=root)
+        if account_status not in ["yes", "no"]:
+            print("[Err] Comply with the prompt")
+            account_status = None
+
 
     while username is None and password is None and fullname is None:
         username = simpledialog.askstring(
@@ -297,6 +306,13 @@ def Run() -> None:
             "Password", "Type in a Password.", parent=root)
         fullname = simpledialog.askstring(
             "Full Name", "Type Full Name.", parent=root)
+        
+        if len(username) > 50 or len(password) > 50 or len(fullname) > 50:
+            print("Invalid Field Length")
+            username = None
+            password = None
+            fullname = None
+            
 
     root.deiconify()
 
