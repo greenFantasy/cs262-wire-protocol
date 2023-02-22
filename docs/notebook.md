@@ -1,4 +1,4 @@
-## Entry 1/9/2023 11:00 am
+## Entry 2/9/2023 11:00 am
 
 Worked on looking at documentation of the the python GrPC protocol online and worked through the demo example provided regarding latitude and longitude coordinate transfer. 
 Talked about how we do not have to stream things messages, because each message can be treated as its own operation rather than a streaming operation.
@@ -11,7 +11,7 @@ We can recreate the stub files using the proto:
 
 We now see that it is good form to have the protos file inside of a protos directory. 
 
-## Entry 1/9/2023 9:04 pm 
+## Entry 2/9/2023 9:04 pm 
 
 In order to create an account, we have a username Unique Id, Name, password. To send messages the user has to login. We want to avoid a situation where two people request to make a username account and both will not be assigned the same id (whoever's request is sent first). My basic take is that the login token recieved should just expire after an hour and not take user activity into account. I (AM) would prefer if we implement most basic working implementation first before adding bells and whistles. 
 
@@ -21,10 +21,22 @@ We have to mantain a list of the tokens that are valid, deliver to chat user eit
 
 For the future, we want to mantain message histories, delivery confirmation and auth extension based on activity. For now we are starting with individual messages to get the server to work in the future we might add message streams.  
 
-## Entry 1/12/2023 4:37 pm 
+## Entry 2/10/2023 5:19 pm
+
+We finalized our wire protocol standards as follows: The wire protocol encoding scheme uses an opcode and version number to determine the type of operation and support backwards compatibility. The message is encoded as a unified string buffer and decoded by parsing deliminated fields. An authentication token is required for every operation that requires the user to be logged in, which is validated by the server-side token hub upon receiving a message. The documentation also provides the message types for create account, login, message request, and list account functionalities in both wire protocol and gRPC implementation, with slight variations between the two. The documentation provides the code structure for both the wire protocol and gRPC implementation for each message type.
+
+[Full Wire Protocol and gRPC Documentation Here](wire_design.md)
+
+
+## Entry 2/12/2023 4:37 pm 
 
 In order to create a user account we have to keep track of metadata. We opt for the twitter type inbox system where messages are just queues waiting for the user like emails. We also enable a user metadata store that keeps track of all usernames, passwords and full names. Lastly, we have a token hub which in turn provides the much needed token to timestamp mapping so we can tell when a token has expired. 
 
+
+## Entry 2/13/2023 9:13 am
+
+
+We ran into the following error when trying to use a forked process for the tkinter interface and the listening thread and then realized that we could not do this because the main loop object was not serializable. This came at the cost of us using python threads for the listening loop insteads of processes from Multiprocessing. 
 
 ```
 Traceback (most recent call last):
@@ -52,6 +64,10 @@ TypeError: cannot pickle '_tkinter.tkapp' object
 ```
 
 
+## Entry 2/13/2023 10:32 pm 
+
+We ran into this error when we found the tokens we were using in token hub had the incorrect datetime formatting and indexing issue. We fixed this by standardizing to UTC. 
+
 ```
 Exception in thread Thread-1:
 Traceback (most recent call last):
@@ -71,7 +87,15 @@ grpc._channel._MultiThreadedRendezvous: <_MultiThreadedRendezvous of RPC that te
         debug_error_string = "UNKNOWN:Error received from peer ipv6:%5B::1%5D:50051 {created_time:"2023-02-13T02:18:43.129338-05:00", grpc_status:2, grpc_message:"Exception iterating responses: \'float\' object has no attribute \'total_seconds\'"}"
 ```
 
-# Entry 2/16 12:00pm
+## Entry 2/14/2023 4:13 pm 
+
+We ran into several bugs with our integration testing due to deadlocks and contentions with our locking and integrity implementation. In order to solve this we removed any global locking and kept only some per object locks that have low contention. We found that three structures require access protection: user metadata store, token hub, and user inbox. The user metadata store and token hub use the `app.metadata_lock`, while the user inbox has its own lock called `app.inbox_lock`. The locking is implemented using the with pythonic syntax to ensure that the lock is not held after a function returns or a scope is unexpectedly terminated. The locking hierarchy is strictly maintained to prevent deadlocks, where the metadata lock is held first, followed by the inbox lock, and the reverse order is used to release them. Overall, the fine-grained locking approach aims to reduce contention and increase efficiency in handling concurrent requests in the chat server.
+
+[Full Locking Documentation Here](locking_design.md)
+
+
+
+## Entry 2/16/2023 12:00 pm
 
 Todos: 
   - Handle GRPC errors on both client and server side
@@ -85,15 +109,20 @@ Todos:
     - Client-side wire protocol
     - 4 bytes -> opcode (which dataclass the rest of this message refers to)
     - Client should ignore message if not decodable
-  
 
-# Entry 2/19 - 12pm
+## Entry 2/18/2023 3:30 pm 
+
+We finished deciding on how we would implement the sockets part of the server code now that we have the grpc part done. This required us to settle for how capable our sockets server could be and we have simplified our overall design.For the gRPC setup, we have a global pool of threads that we can use to handle incomimg connections for each request. We use a RPC stream response for a client's refresh thread. This returns a blocking iterator object that in turn takes the messages that the user has not gotten and forwards them to the user. On the other hand, we have the socket implementation that does not run as a dameon thread because it is essentially polling the inbox server with a timed loop that constantly asks for refreshed messages in return for a message update per refresh. 
+
+[Full Design Schematic](schematic.md) 
+
+## Entry 2/19/2023 12:00 pm
 For sockets, interesting problem of how we want to deal with clients violently disconnecting (by this, meaning disconnecting with no trace). We can either be constantly sending small messages back and forth between server and client once a connection is opened, and as soon as those stop being sent / received (with small timeout), we can end the connection on the server side. Or, we can have not send back and forths and instead just have a larger timeout (~60 min), such that as soon as the timeout is violated, we assume the client has "violently" disconnected and we end the connection. A 60 minute large timeout also corresponds to the liveliness of user auth tokens, although it has the con of leaving a connection open potentially long after it has been dead on the client side and also cutting a connection that is actually still open. It's unclear which implementation we should be using, but currently we will go with the large timeout option due to its ease of implementation.
 
-# Entry 2/19 - 6pm
+## Entry 2/19/2023 6:00 pm
 It seems like grpc automatically takes care of pairing. If two threads from the same machine each make a request, grpc will pair them correctly. I'm curious if we need to deal with the pairing in sockets. My intuition tells me no, since it seems like quite an annoying, nontrivial problem, and instead each thread / connection is given a unique port and receives a unique message.
 
-# Entry 2/21 - 11pm
+## Entry 2/19/2023 11:00 pm
 Found a bug in the UI that messages sent to an invalid recipient (aka a nonexistent username) still show up on the UI as if they were sent. We need a different message
 to pop up on the UI indicating that user does not exist. Currently this bug has been verified to exist for both gRPC and socket implementations. I (RM) will fix this, 
 but we will need to check to make sure the error handling is properly taken care of on the client everywhere else. We also need to potentially check the client that 
