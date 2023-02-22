@@ -177,11 +177,17 @@ class ClientApplication:
         self.message_input.pack(side=BOTTOM)
 
         # type input
-        self.type_input = Entry(self.application_window, bd=2)
-        self.type_input.focus()
-        self.type_input.insert(0, "LIST, MSG, DELETE")
-        self.type_input.pack(side=RIGHT)
-        self.type_input.bind('<Return>', self.EnterCommand)
+        OPTIONS = [
+            "LIST",
+            "MSG",
+            "DELETE"
+        ] 
+        
+        self.type_input = StringVar(self.application_window)
+        self.type_input.set(OPTIONS[0]) # default value
+
+        self.menu = OptionMenu(self.application_window, self.type_input, *OPTIONS)
+        self.menu.pack(side=RIGHT)
 
     def EnterCommand(self, event) -> None:
         """
@@ -198,6 +204,7 @@ class ClientApplication:
 
         if cmd_type == "MSG":
             msg = self.message_input.get()
+            self.message_input.delete(0, END)
             recp = self.recp_input.get()
 
             if len(msg) > MAX_CHAR_COUNT:
@@ -222,7 +229,7 @@ class ClientApplication:
             self.messages.insert(END, gui_msg_string + "\n")
 
         if cmd_type == "LIST":
-            recp = self.recp_input.get()
+            recp = self.message_input.get()
             list_packet = self.message_creator.ListAccountRequest(
                 version=1,
                 auth_token=self.token,
@@ -232,6 +239,8 @@ class ClientApplication:
             )
 
             resp = self.client_stub.ListAccounts(list_packet)
+            if resp.error_code:
+                self.messages.insert(END, "[ERR] " + resp.error_code + "\n")
             self.messages.insert(END, resp.account_names + "\n")
 
         if cmd_type == "DELETE":
@@ -240,9 +249,9 @@ class ClientApplication:
             resp = self.client_stub.DeleteAccount(del_packet)
 
             if len(resp.error_code) == 0:
-                self.messages.insert(END, "Account Deleted")
+                self.messages.insert(END, "Account Deleted\n")
             else:
-                self.messages.insert(END, resp.error_code)
+                self.messages.insert(END, "[ERR] " + resp.error_code + "\n")
 
 
 def Run() -> None:

@@ -122,7 +122,7 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         If the recipient does not exist, the function returns a
         `MessageReply` object with an error code indicating an invalid recipient.
         """
-
+        print(request)
         token = request.auth_token
         username = request.username
         recipient = request.recipient_username
@@ -180,6 +180,7 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
         """
         # every client will end up running this
         while True:
+            print(request)
             token = request.auth_token
             username = request.username
             if self.ValidateToken(username=username,
@@ -190,6 +191,7 @@ class ChatServer(chat_pb2_grpc.ChatServerServicer):
             while self.CheckInboxLength(username=username) > 0:
                 with self.inbox_lock:
                     msg = self.user_inbox[username].pop(0)
+                    print(msg)
 
                 # ended lock context before yield
                 yield chat_pb2.RefreshReply(version=1,
