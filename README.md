@@ -33,6 +33,10 @@ Below is the documentation for our unit tests.
 
 ## Running the Client
 
+Once the server is running, pull up the networking profile of the host machine and add the local ip address to line 15 in `client.py` where `ADDRESS` is defined. An example comment there already specifies what this should look like. 
+
+![server address edit](docs/images/client_addr.png)
+
 In order to run the server open a bash / terminal on your computer and simply invoke the following:
 
 For GRPC.
