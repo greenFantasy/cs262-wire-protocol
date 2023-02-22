@@ -1,14 +1,14 @@
-from client import ClientApplication
-from socket_server import ChatServer
-import os
-from colorama import Fore, Style
-import time
-import socket
-
-import threading as th
 import multiprocessing as mp
+import os
+import socket
+import threading as th
+import time
 from tkinter import *
 
+from colorama import Fore, Style
+
+from client import ClientApplication
+from socket_server import ChatServer
 
 PORT = 50051
 

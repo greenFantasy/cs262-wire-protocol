@@ -1,16 +1,16 @@
-from client import ClientApplication
-from grpc_server import ChatServer
-from concurrent import futures
-import os
-from colorama import Fore, Style
-import grpc
-import chat_pb2_grpc
-import time
-
-import threading as th
 import multiprocessing as mp
+import os
+import threading as th
+import time
+from concurrent import futures
 from tkinter import *
 
+import grpc
+from colorama import Fore, Style
+
+import chat_pb2_grpc
+from client import ClientApplication
+from grpc_server import ChatServer
 
 PORT = '50051'
 

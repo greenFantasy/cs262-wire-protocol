@@ -1,18 +1,16 @@
-from concurrent import futures
-import logging
-from collections import defaultdict
-from uuid import uuid4
 import binascii
+import datetime
+import logging
 import os
 import re
-
-from datetime import timezone
-import datetime
+import threading as mp
+from collections import defaultdict
+from concurrent import futures
 
 import grpc
+
 import chat_pb2
 import chat_pb2_grpc
-import threading as mp
 
 
 class ChatServer(chat_pb2_grpc.ChatServerServicer):

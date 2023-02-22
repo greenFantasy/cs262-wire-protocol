@@ -1,10 +1,9 @@
-from grpc_server import ChatServer as gRPCChatServer
-from socket_server import ChatServer as SocketChatServer
+from colorama import Fore, Style
 
 import chat_pb2
 import wire_protocol as wp
-
-from colorama import Fore, Style
+from grpc_server import ChatServer as gRPCChatServer
+from socket_server import ChatServer as SocketChatServer
 
 
 def GenerateTokenTest():

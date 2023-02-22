@@ -1,16 +1,15 @@
 from __future__ import print_function
 
 import logging
-
-import grpc
-import chat_pb2
-import chat_pb2_grpc
-import time
-
 import threading as mp
+import time
 from tkinter import *
 from tkinter import simpledialog
 
+import grpc
+
+import chat_pb2
+import chat_pb2_grpc
 import wire_protocol as wp
 
 ADDRESS = "localhost"  # "10.250.240.43"

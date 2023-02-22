@@ -1,12 +1,13 @@
-import socket
-from collections import defaultdict
-import datetime
-import threading as mp
-import os
 import binascii
+import datetime
+import os
 import re
+import socket
+import threading as mp
+from collections import defaultdict
 
 import wire_protocol as wp
+
 socket.setdefaulttimeout(60 * 60)
 
 
