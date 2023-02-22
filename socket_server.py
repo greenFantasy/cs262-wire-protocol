@@ -32,21 +32,48 @@ class ChatServer:
         # inbox lock
         self.inbox_lock = mp.Lock()
     
-    def generate_token(self):
+    def GenerateToken(self) -> str:
+        """
+        Generates a token for authenticating user requests to a chat server.
+
+        Returns:
+            str: A token that can be used to authenticate user requests.
+        """
+        
         token = os.urandom(self.token_length)
         return binascii.hexlify(token).decode()
     
-    def validate_password(self, password):
+    def ValidatePassword(self, password: str) -> int:
+        """
+        Validates a password to ensure that it is a string.
+
+        Args:
+            password (str): The password to validate.
+
+        Returns:
+            int: Returns 0 if the password is a string, or -1 if it is not.
+        """
+        
         if type(password) != str:
             return -1
         else:
             return 0
     
-    def validate_token(self, username, token):
-        if username not in self.token_hub.keys():
-            return -1
-        
+    def ValidateToken(self, username: str, token: str) -> int:
+        """
+        Validates a user token and checks if it has expired.
+
+        Args:
+            username (str): The username associated with the token.
+            token (str): The token to validate.
+
+        Returns:
+            int: Returns 0 if the token is valid and has not expired, 
+            or -1 if it is invalid or has expired.
+        """
         with self.metadata_lock:
+            if username not in self.token_hub.keys():
+                return -1
             stored_token, timestamp = self.token_hub[username]
             
             if stored_token != token:
@@ -60,7 +87,17 @@ class ChatServer:
             
             return 0
 
-    def create_account(self, raw_bytes):
+    def CreateAccount(self, raw_bytes: str) -> wp.encode.AccountCreateReply:
+        """
+        Validates the buffer and registers a new user with relevant metadata structures.
+
+        Args:
+            raw_bytes (str): The raw bytes containing the user account information.
+
+        Returns:
+            wp.encode.AccountCreateReply: Returns an `AccountCreateReply` object that contains the version, error code,
+            authentication token, and full name of the new user.
+        """
         request = wp.socket_types.AccountCreateRequest(raw_bytes)
         if request.generated_error_code:
             return wp.encode.AccountCreateReply(version=1,
@@ -78,7 +115,7 @@ class ChatServer:
             
             # get the password and do basic error checking
             password = request.password
-            if self.validate_password(password) < 0:
+            if self.ValidatePassword(password) < 0:
                 return wp.encode.AccountCreateReply(version=1,
                                     error_code="ERROR Invalid Passcode",
                                     auth_token="",
@@ -86,7 +123,7 @@ class ChatServer:
             
             # prepare metadata
             fullname = request.fullname
-            token = self.generate_token()
+            token = self.GenerateToken()
             timestamp = self.utc_time_gen.now().timestamp()
         
         
@@ -104,7 +141,30 @@ class ChatServer:
                                                 auth_token=token,
                                                 fullname=fullname)
     
-    def login(self, raw_bytes):
+    def Login(self, raw_bytes: str) -> wp.socket_types.LoginReply:
+        """
+        Authenticate a user and generate a token for them to access the chat server.
+
+        Args:
+            raw_bytes (str): A string containing the serialized LoginRequest message.
+
+        Returns:
+            LoginReply: A message containing the authentication token 
+            and user information, or an error message if the login failed.
+
+        The function validates the given username 
+        and password against the user metadata store,
+        and generates a new token for 
+        the user if the login is successful. 
+        The token is stored in the token hub, 
+        and returned to the user in the LoginReply message. 
+        If the username or password is invalid, 
+        an error message is returned instead.
+        Note that the LoginRequest message is 
+        deserialized from the `raw_bytes` string before processing, 
+        and the LoginReply message is serialized before being returned.
+        """
+
         request = wp.socket_types.LoginRequest(raw_bytes)
 
         # get the given username and do basic error checking
@@ -126,7 +186,7 @@ class ChatServer:
                                     fullname="")
             
             # generate new token
-            token = self.generate_token()
+            token = self.GenerateToken()
             timestamp = self.utc_time_gen.now().timestamp()
         
             # register token in token hub
@@ -136,7 +196,36 @@ class ChatServer:
                                     auth_token=token,
                                     fullname=self.user_metadata_store[username][1])
 
-    def receive_message(self, raw_bytes):
+    def ReceiveMessage(self, raw_bytes: str) -> wp.encode.MessageReply:
+        """
+        Receives a raw string buffer from the user 
+        and stores the message in the correct recipient's inbox.
+
+        Args:
+            raw_bytes (str): A string buffer representing a message sent by a user, 
+            containing the message content,
+            recipient username, and authentication token.
+
+        Returns:
+            wp.encode.MessageReply: A message reply object containing 
+            a version number and error code, if applicable.
+
+        The function first parses the request message from the raw string buffer 
+        using the `MessageRequest` object. It then validates the authentication token 
+        and recipient username using the `ValidateToken` function. If the validation
+        fails, the function returns a `MessageReply` object with an appropriate error code.
+
+        If the authentication token and recipient username are valid, 
+        the function appends the message to the recipient's
+        inbox and returns a `MessageReply` object with a success code.
+
+        The function uses the `inbox_lock` to protect access 
+        to the inbox dictionaries and ensures that the inbox for the
+        recipient exists before attempting to append the message. 
+        If the recipient does not exist, the function returns a
+        `MessageReply` object with an error code indicating an invalid recipient.
+        """
+
         request = wp.socket_types.MessageRequest(raw_bytes)
 
         token = request.auth_token
@@ -144,7 +233,7 @@ class ChatServer:
         recipient = request.recipient_username
         
         # note that validate token is protected by the metadata lock
-        if self.validate_token(username=username,
+        if self.ValidateToken(username=username,
                               token=token) < 0:
             return wp.encode.MessageReply(version=1,
                                          error_code="Invalid Token")
@@ -163,12 +252,24 @@ class ChatServer:
             self.user_inbox[recipient].append(modified_string)
             return wp.encode.MessageReply(version=1, error_code="")
 
-    def list_accounts(self, raw_bytes):
+    def ListAccounts(self, raw_bytes: str) -> wp.encode.ListAccountReply:
+        """
+        Validate the user's token, and return a list of usernames 
+        filtered by a regular expression. 
+        The list is limited to a maximum of 100 usernames.
+
+        Args:
+            raw_bytes (str): The raw string buffer containing the user request.
+
+        Returns:
+            wp.socket_types.ListAccountReply: A socket type object containing the version, 
+            error code and a comma-separated list of filtered usernames.
+        """
         request = wp.socket_types.ListAccountRequest(raw_bytes)
 
         token = request.auth_token
         username = request.username
-        if self.validate_token(username=username,
+        if self.ValidateToken(username=username,
                               token=token) < 0:
             return wp.encode.ListAccountReply(version=1,
                                              error_code="Invalid token",
@@ -191,12 +292,25 @@ class ChatServer:
                                           error_code="",
                                           account_names=filtered_string)
     
-    def delete_account(self, raw_bytes):
+    def DeleteAccount(self, raw_bytes: str) -> wp.encode.DeleteAccountReply:
+        """
+        Deletes the user account and associated metadata, 
+        including the user's inbox, based on a raw string buffer received from the user.
+
+        Args:
+            raw_bytes (str): The raw string buffer to validate and process.
+
+        Returns:
+            wp.encode.DeleteAccountReply: A reply message that 
+            indicates the success or failure of the operation. 
+            The message contains a version number, an error code (if any), 
+            and an empty string as a payload.
+        """
         request = wp.socket_types.DeleteAccountRequest(raw_bytes)
 
         token = request.auth_token
         username = request.username
-        if self.validate_token(username=username,
+        if self.ValidateToken(username=username,
                               token=token) < 0:
             return wp.encode.DeleteAccountReply(version=1,
                                                 error_code="Invalid token")
@@ -212,12 +326,32 @@ class ChatServer:
                 return wp.encode.DeleteAccountReply(version=1, 
                                                 error_code="")
     
-    def deliver_messages(self, raw_bytes):
+    def DeliverMessages(self, raw_bytes: str) -> wp.encode.RefreshReply:
+        """
+        Given a raw string buffer user request, 
+        validate the request and deliver a set of messages to the user.
+
+        Args:
+            raw_bytes (str): A raw string buffer user request.
+
+        Returns:
+            wp.encode.RefreshReply: A RefreshReply object containing 
+            the messages and/or error code.
+
+        This function validates the user request, 
+        and if the request is valid, 
+        it checks the user inbox for any new messages.
+        If there are new messages, it returns a RefreshReply object 
+        with the messages and an empty inbox.
+        If there are no new messages, it returns a 
+        RefreshReply object with an empty message and an error code.
+        """
+
         request = wp.socket_types.RefreshRequest(raw_bytes)
 
         token = request.auth_token
         username = request.username
-        if self.validate_token(username=username,
+        if self.ValidateToken(username=username,
                             token=token) < 0:
             return wp.encode.RefreshReply(version=1,
                                             message="",
@@ -239,9 +373,18 @@ class ChatServer:
                                             )
 
 
-    def handle_new_connection(self, c : socket.socket, addr):
+    def HandleNewConnection(self, c: socket.socket, addr: tuple) -> None:
+        """
+        This method handles incoming connections and spins off new threads to handle requests.
 
-        # TODO: Protect against crashing if client violently disconnects
+        Args:
+            c (socket.socket): The socket object used for communication with the client.
+            addr (tuple): The IP address and port number of the client.
+
+        Returns:
+            None
+        """
+        
         while True:
             data = c.recv(1024)
             decoded = ""
@@ -262,12 +405,12 @@ class ChatServer:
                 opcode = -1
 
             opcode_map = {
-                0: self.create_account,
-                1: self.login,
-                2: self.receive_message,
-                3: self.list_accounts,
-                4: self.delete_account,
-                5: self.deliver_messages
+                0: self.CreateAccount,
+                1: self.Login,
+                2: self.ReceiveMessage,
+                3: self.ListAccounts,
+                4: self.DeleteAccount,
+                5: self.DeliverMessages
             }
 
             if opcode in opcode_map.keys():
@@ -302,4 +445,4 @@ if __name__ == "__main__":
         print('Connected to :', addr[0], ':', addr[1])
 
         # Start a new thread and return its identifier
-        mp.Thread(target=chatServer.handle_new_connection, daemon=False, args=(c,addr)).start()
+        mp.Thread(target=chatServer.HandleNewConnection, daemon=False, args=(c,addr)).start()

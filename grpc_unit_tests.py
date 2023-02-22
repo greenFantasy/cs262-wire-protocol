@@ -1,5 +1,5 @@
 from client import ClientApplication
-from server import ChatServer
+from grpc_server import ChatServer
 from concurrent import futures
 import signal
 import os
@@ -17,9 +17,7 @@ from tkinter import *
 
 PORT = '50051'
 
-
-
-def run_client_thread(username, password, fullname, account_status="no"):
+def RunClientThread(username, password, fullname, account_status="no"):
     root = Tk()
     frame = Frame(root, width=300, height=300)
     frame.pack()
@@ -102,7 +100,7 @@ def run_client_thread(username, password, fullname, account_status="no"):
     
     time.sleep(2)
     
-    def listen(app):
+    def Listen(app):
         auth_msg_request = app.message_creator.RefreshRequest(version=1, 
                                                         auth_token=app.token,
                                                         username=app.username)
@@ -127,7 +125,7 @@ def run_client_thread(username, password, fullname, account_status="no"):
             
             
     
-    listen_th = th.Thread(target=listen, args=(app,), daemon=True)
+    listen_th = th.Thread(target=Listen, args=(app,), daemon=True)
     listen_th.start()
     
     print(f"Process {app.username} Sleeping")
@@ -222,12 +220,12 @@ def run():
     chat_pb2_grpc.add_ChatServerServicer_to_server(ChatServer(), server)
     server.add_insecure_port('[::]:' + PORT)
     server.start()
-    print("Server started, listening on " + PORT)
+    print("Server started, Listening on " + PORT)
 
-    proc1 = mp.Process(target=run_client_thread, args=('a', 'b', 'a', 'no'))
-    proc2 = mp.Process(target=run_client_thread, args=('b', 'c', 'b', 'no'))
-    proc3 = mp.Process(target=run_client_thread, args=('c', 'd', 'c', 'no'))
-    proc4 = mp.Process(target=run_client_thread, args=('d', 'a', 'd', 'no'))
+    proc1 = mp.Process(target=RunClientThread, args=('a', 'b', 'a', 'no'))
+    proc2 = mp.Process(target=RunClientThread, args=('b', 'c', 'b', 'no'))
+    proc3 = mp.Process(target=RunClientThread, args=('c', 'd', 'c', 'no'))
+    proc4 = mp.Process(target=RunClientThread, args=('d', 'a', 'd', 'no'))
 
     proc1.start()
     proc2.start()

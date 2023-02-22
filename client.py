@@ -44,7 +44,7 @@ class ClientApplication:
         self.address = address
         self.port = port
         
-        self.listen_loop = None
+        self.ListenLoop = None
         # create channel
         if self.use_grpc:
             self.channel = grpc.insecure_channel(f"{self.address}:{self.port}")
@@ -79,15 +79,42 @@ class ClientApplication:
             else:
                 self.token = resp.auth_token
         
-    def start(self):
-        # TODO: Implement this!!!
-        self.interface_setup()
-        self.listen_loop = mp.Thread(target=self.listen_loop, daemon=True)
-        self.listen_loop.start()
+    def Start(self) -> None:
+        """
+        Starts the chat server by setting up the 
+        graphical user interface (GUI) and creating the listening thread.
+        After this method is called, the chat server 
+        will start accepting client connections and messages.
+
+        This method should be called only once. It performs the following actions:
+            1. Calls `InterfaceSetup` to create and configure the GUI.
+            2. Creates a listening thread by calling `ListenLoop` method 
+                in a new thread with the `daemon` option set to True.
+            This thread listens for incoming connections and 
+                handles them by creating a new thread for each client.
+            3. Starts the main loop of the GUI by calling `mainloop` method.
+
+        Returns:
+            None
+        """
+        self.InterfaceSetup()
+        self.ListenLoop = mp.Thread(target=self.ListenLoop, daemon=True)
+        self.ListenLoop.start()
         self.application_window.mainloop()
         
     
-    def listen_loop(self):
+    def ListenLoop(self) -> None:
+        """
+        Listens for new messages intended for the client's user. 
+        If `use_grpc` is True, it listens for new messages using gRPC. 
+        Otherwise, it continuously sends a `RefreshRequest` message to the
+        chat server and waits for a `RefreshReply` message. 
+        If a new message is received, it is added to the `messages` 
+        widget in the client application window.
+
+        Returns:
+            None
+        """
         if self.use_grpc:
             auth_msg_request = self.message_creator.RefreshRequest(version=1, 
                                                     auth_token=self.token,
@@ -107,7 +134,30 @@ class ClientApplication:
                 time.sleep(1)
 
             
-    def interface_setup(self):
+    def InterfaceSetup(self) -> None:
+        """
+        Sets up the user interface for the chat client.
+
+        The following UI elements are created and displayed:
+        - A Text widget to display chat messages.
+        - A Label widget to display the current user's username.
+        - An Entry widget to allow the user to specify the recipient of a message.
+        - An Entry widget to allow the user to type in chat messages.
+        - An Entry widget to allow the user to specify a command (LIST, MSG, DELETE).
+
+        The 'recipient input' and 'message input' Entry widgets have default text
+        which is cleared when the user clicks on them.
+
+        The 'message input' Entry widget is bound to the '<Return>' key event, so that
+        pressing the Enter key sends the message to the recipient specified in the
+        'recipient input' widget.
+
+        The 'type input' Entry widget is bound to the '<Return>' key event, so that
+        pressing the Enter key sends the command specified in the widget.
+
+        This method should be called once during setup of the chat client's UI.
+        """
+
         
         # setup up the UI for the specific chat inbox
         self.messages = Text()
@@ -127,7 +177,7 @@ class ClientApplication:
         # input for entering messages
         self.message_input = Entry(self.application_window, bd=7)
         self.message_input.insert(0, "Sample Message")
-        self.message_input.bind('<Return>', self.enter_command)
+        self.message_input.bind('<Return>', self.EnterCommand)
         self.message_input.focus()
         self.message_input.pack(side=BOTTOM)
         
@@ -136,11 +186,18 @@ class ClientApplication:
         self.type_input.focus()
         self.type_input.insert(0, "LIST, MSG, DELETE")
         self.type_input.pack(side=RIGHT)
-        self.type_input.bind('<Return>', self.enter_command)
+        self.type_input.bind('<Return>', self.EnterCommand)
         
-    def enter_command(self, event):
+    def EnterCommand(self, event) -> None:
         """
-        This method is called when user enters something into the textbox
+        Handles client requests based on the command type specified 
+        in the `type_input` field of the chat UI.
+
+        Args:
+            event: A Tkinter event object.
+        
+        Returns:
+            None
         """
         cmd_type = self.type_input.get()
         
@@ -179,21 +236,23 @@ class ClientApplication:
             if len(resp.error_code) == 0:
                 self.messages.insert(END, "Account Deleted")
             else:
-                self.messages.insert(END, resp.error_code)
-            
-        # TODO as of now, no error checking is occruing on whether the packet is even being returned correctly
+                self.messages.insert(END, resp.error_code)        
         
-        
-def run():
+def Run() -> None:
+    """
+    Initializes the Chat Application listening loop 
+    and the GUI. Get the relevant information from the user
+    and creates an account. GRPC / Socket Server Agnostic
+    
+    Returns:
+        None
+    """
     use_grpc = None
     while not (use_grpc == "y" or use_grpc == "n"):
         use_grpc = input("Use grpc? (y/n): ")
     use_grpc = (use_grpc == "y")
     print(f"use_grpc: {use_grpc}")
 
-    # NOTE(gRPC Python Team): .close() is possible on a channel and should be
-    # used in circumstances in which the with statement does not fit the needs
-    # of the code.
     root = Tk()  # I just used a very simple Tk window for the chat UI, this can be replaced by anything
     frame = Frame(root, width=300, height=300)
     frame.pack()
@@ -227,4 +286,4 @@ def run():
 
 if __name__ == '__main__':
     logging.basicConfig()
-    run()
+    Run()

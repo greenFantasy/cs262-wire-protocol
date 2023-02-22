@@ -243,7 +243,7 @@ def run_server():
             print('Connected to :', addr[0], ':', addr[1])
 
             # Start a new thread and return its identifier
-            th.Thread(target=chatServer.handle_new_connection, daemon=False, args=(c,addr)).start()
+            th.Thread(target=chatServer.HandleNewConnection, daemon=False, args=(c,addr)).start()
             
 def run():
 
