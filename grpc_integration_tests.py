@@ -65,14 +65,14 @@ def RunClientThread(
         # If the app object does not have a token, print a failure message and
         # raise an assertion error.
         else:
-            print(Fore.RED + "CREATE ACCOUNT TEST FAILED: token-invalid:"
+            print("CREATE ACCOUNT TEST FAILED: token-invalid:"
                   + str(app.token)
                   + Style.RESET_ALL)
             assert False
     # If an exception is raised, print a failure message and raise an
     # assertion error.
     except Exception as e:
-        print(Fore.RED + "CREATE ACCOUNT TEST FAILED: "
+        print("CREATE ACCOUNT TEST FAILED: "
               + "Client Application could not be intialized"
               + Style.RESET_ALL)
         assert False
@@ -109,7 +109,7 @@ def RunClientThread(
               + Style.RESET_ALL)
     # If check is False, print a failure message and raise an assertion error.
     else:
-        print(Fore.RED + "LIST ACCOUNTS FAILED: "
+        print("LIST ACCOUNTS FAILED: "
               + str(check)
               + " values: "
               + resp.account_names
@@ -131,7 +131,7 @@ def RunClientThread(
     # Check if there is an error code in the return value
     if len(ret_val.error_code) > 0:
         # Print an error message with the error code
-        print(Fore.RED + "CONCURRENT MESSAGE SEND FAILED: "
+        print("CONCURRENT MESSAGE SEND FAILED: "
               + str(check)
               + " error_code: "
               + ret_val.error_code
@@ -163,7 +163,7 @@ def RunClientThread(
                 else:
                     # Print an error message with the expected and actual values in
                     # red text
-                    print(Fore.RED + "CONCURRENT MESSAGE FAILED: "
+                    print("CONCURRENT MESSAGE FAILED: "
                         + str(check)
                         + " values: "
                         + found
@@ -193,7 +193,7 @@ def RunClientThread(
         # Check if there is an error code in the response
         if len(resp.error_code) > 0:
             # Print an error message with the error code
-            print(Fore.RED + "ACCOUNT DELETION FAILED: "
+            print("ACCOUNT DELETION FAILED: "
                   + str(check)
                   + " error_code: "
                   + resp.error_code
@@ -225,7 +225,7 @@ def RunClientThread(
         ret_val = app.client_stub.SendMessage(msg_packet)
 
         if len(ret_val.error_code) > 0:
-            print(Fore.RED + "CONCURRENT MESSAGE SEND FAILED: "
+            print("CONCURRENT MESSAGE SEND FAILED: "
                   + " error_code: "
                   + ret_val.error_code
                   + Style.RESET_ALL)
