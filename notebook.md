@@ -87,8 +87,16 @@ Todos:
     - Client should ignore message if not decodable
   
 
-# Entry 2/19
+# Entry 2/19 - 12pm
 For sockets, interesting problem of how we want to deal with clients violently disconnecting (by this, meaning disconnecting with no trace). We can either be constantly sending small messages back and forth between server and client once a connection is opened, and as soon as those stop being sent / received (with small timeout), we can end the connection on the server side. Or, we can have not send back and forths and instead just have a larger timeout (~60 min), such that as soon as the timeout is violated, we assume the client has "violently" disconnected and we end the connection. A 60 minute large timeout also corresponds to the liveliness of user auth tokens, although it has the con of leaving a connection open potentially long after it has been dead on the client side and also cutting a connection that is actually still open. It's unclear which implementation we should be using, but currently we will go with the large timeout option due to its ease of implementation.
 
-# Entry 2/19 - later
+# Entry 2/19 - 6pm
 It seems like grpc automatically takes care of pairing. If two threads from the same machine each make a request, grpc will pair them correctly. I'm curious if we need to deal with the pairing in sockets. My intuition tells me no, since it seems like quite an annoying, nontrivial problem, and instead each thread / connection is given a unique port and receives a unique message.
+
+# Entry 2/21 - 11pm
+Found a bug in the UI that messages sent to an invalid recipient (aka a nonexistent username) still show up on the UI as if they were sent. We need a different message
+to pop up on the UI indicating that user does not exist. Currently this bug has been verified to exist for both gRPC and socket implementations. I (RM) will fix this, 
+but we will need to check to make sure the error handling is properly taken care of on the client everywhere else. We also need to potentially check the client that 
+it can handle malicious messages sent to it.
+
+It looks like only the CreateClientAccount code in the socket server was prepped to handle malicious messages, I forgot to add that to the rest of the messages. Perhaps we should be unit testing this behavior? Either way the code should be fixed now, malicious messages sent to the socket server should return an error code.

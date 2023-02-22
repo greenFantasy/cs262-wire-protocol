@@ -209,9 +209,13 @@ class ClientApplication:
                                                  message=msg,
                                                  username=self.username,
                                                  recipient_username=recp)
-            gui_msg_string = f"[me -> {recp}] {msg}\n"
+            
+            resp = self.client_stub.SendMessage(msg_packet)
+            if resp.error_code:
+                gui_msg_string = f"Failed to send message to {recp} due to Error: {resp.error_code}"
+            else:
+                gui_msg_string = f"[me -> {recp}] {msg}\n"
             self.messages.insert(END, gui_msg_string + "\n")
-            self.client_stub.SendMessage(msg_packet)
         
         if cmd_type == "LIST":
             recp = self.recp_input.get()
@@ -281,7 +285,7 @@ def Run() -> None:
                       port=PORT,
                       application_window=frame) 
 
-    app.start()
+    app.Start()
 
 if __name__ == '__main__':
     logging.basicConfig()

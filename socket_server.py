@@ -166,6 +166,11 @@ class ChatServer:
         """
 
         request = wp.socket_types.LoginRequest(raw_bytes)
+        if request.generated_error_code:
+            return wp.encode.LoginReply(version=1,
+                                    error_code=request.generated_error_code,
+                                    auth_token="",
+                                    fullname="")
 
         # get the given username and do basic error checking
         username = request.username
@@ -227,6 +232,10 @@ class ChatServer:
         """
 
         request = wp.socket_types.MessageRequest(raw_bytes)
+        if request.generated_error_code:
+            return wp.encode.MessageReply(version=1,
+                                          error_code=request.generated_error_code,
+                                         )
 
         token = request.auth_token
         username = request.username
@@ -266,6 +275,11 @@ class ChatServer:
             error code and a comma-separated list of filtered usernames.
         """
         request = wp.socket_types.ListAccountRequest(raw_bytes)
+        if request.generated_error_code:
+            return wp.encode.ListAccountReply(version=1,
+                                              error_code=request.generated_error_code,
+                                              account_names=""
+                                              )
 
         token = request.auth_token
         username = request.username
@@ -307,6 +321,10 @@ class ChatServer:
             and an empty string as a payload.
         """
         request = wp.socket_types.DeleteAccountRequest(raw_bytes)
+        if request.generated_error_code:
+            return wp.encode.ListAccountReply(version=1,
+                                              error_code=request.generated_error_code
+                                             )
 
         token = request.auth_token
         username = request.username
@@ -348,6 +366,11 @@ class ChatServer:
         """
 
         request = wp.socket_types.RefreshRequest(raw_bytes)
+        if request.generated_error_code:
+            return wp.encode.RefreshReply(version=1,
+                                          message="",
+                                          error_code=request.generated_error_code
+                                          )
 
         token = request.auth_token
         username = request.username
