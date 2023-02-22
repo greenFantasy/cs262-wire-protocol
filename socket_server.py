@@ -413,7 +413,12 @@ class ChatServer:
         """
 
         while True:
-            data = c.recv(2048)
+            try:
+                data = c.recv(2048)
+            except Exception as e:
+                print("Connection Disrupted:", e, " - softhandler resolved")
+                c.close()
+                return
             decoded = ""
             try:
                 decoded = data.decode("UTF-8")
