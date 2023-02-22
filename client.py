@@ -16,6 +16,7 @@ import wire_protocol as wp
 
 ADDRESS =  "localhost" # "10.250.240.43"
 PORT = 50051
+MAX_CHAR_COUNT = 280
 
 class ClientApplication:
     def __init__(self, 
@@ -203,7 +204,13 @@ class ClientApplication:
         if cmd_type == "MSG":
             msg = self.message_input.get()
             recp = self.recp_input.get()
-            # TODO put checking of size of message here
+            
+            if len(msg) > MAX_CHAR_COUNT:
+                self.messages.insert(END, f"Message is longer than maximum length of {MAX_CHAR_COUNT}." +
+                                            "Please split into multiple messages and try again.\n")
+                return
+
+
             msg_packet = self.message_creator.MessageRequest(version=1,
                                                  auth_token=self.token,
                                                  message=msg,
@@ -214,7 +221,7 @@ class ClientApplication:
             if resp.error_code:
                 gui_msg_string = f"Failed to send message to {recp} due to Error: {resp.error_code}"
             else:
-                gui_msg_string = f"[me -> {recp}] {msg}\n"
+                gui_msg_string = f"[me -> {recp}] {msg}"
             self.messages.insert(END, gui_msg_string + "\n")
         
         if cmd_type == "LIST":
