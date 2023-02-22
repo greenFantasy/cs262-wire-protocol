@@ -54,7 +54,7 @@ message AccountCreateReply {
 rpc CreateAccount (AccountCreateRequest) returns (AccountCreateReply) {}
 ```
 
-Our wire protocol and GRPC implementation match for the most part when it comes to the create account functionality for the chat server. Essentially, both implementations take in a username, password and full name to associate the user metadata with. Then the data is used to create a user inbox, token hub mapping and user profile for the associated client. If any of the information is invalid the reply contains an error code message with the corresponding failure information from the server handler.
+Our wire protocol and GRPC implementation match for the most part when it comes to the create account functionality for the chat server. Essentially, both implementations take in a username, password and full name to associate the user metadata with. Then the data is used to create a user inbox, token hub mapping and user profile for the associated client. If any of the information is invalid, the reply contains an error code message with the corresponding failure information from the server handler.
 
 ### V1. Login via Wire Protocol
 ```python

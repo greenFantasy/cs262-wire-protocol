@@ -21,6 +21,12 @@ Below is our Chat Server design document.
 
 [Chat Server Design](docs/design.md)
 
+## Engineering Notebook
+
+Below is the notebook we used to keep track of our notes.
+
+[Engineering Notebook](notebook.md)
+
 ## Unit Testing Documentation
 
 Below is the documentation for our unit tests.
