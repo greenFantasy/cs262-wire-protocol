@@ -25,7 +25,6 @@ service ChatServer {
 
 }
 
-// The request message containing the user's name.
 message MessageRequest {
   int32 version = 1;
   string auth_token = 2;
@@ -34,7 +33,6 @@ message MessageRequest {
   string message = 5;
 }
 
-// The response message containing the greetings
 message MessageReply {
   int32 version = 1;
   string error_code = 2;
@@ -46,7 +44,6 @@ message RefreshRequest {
   string username = 3;
 }
 
-// The response message containing the greetings
 message RefreshReply {
   int32 version = 1;
   string message = 2;
