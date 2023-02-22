@@ -116,22 +116,21 @@ class ClientApplication:
         Returns:
             None
         """
-        if self.use_grpc:
-            while True:
-                auth_msg_request = self.message_creator.RefreshRequest(
-                    version=1, auth_token=self.token, username=self.username)
+        while True:
+            auth_msg_request = self.message_creator.RefreshRequest(
+                version=1, auth_token=self.token, username=self.username)
 
-                if event.is_set():
-                    break
-                if self.use_grpc:
-                    for msg in self.client_stub.DeliverMessages(auth_msg_request):
-                        self.messages.insert(END, msg.message + '\n')
-                else:
-                    msg = self.client_stub.DeliverMessages(auth_msg_request)
-                    if not msg.error_code:
-                        self.messages.insert(END, msg.message + '\n')
-                    
-                time.sleep(0.5)
+            if event.is_set():
+                break
+            if self.use_grpc:
+                for msg in self.client_stub.DeliverMessages(auth_msg_request):
+                    self.messages.insert(END, msg.message + '\n')
+            else:
+                msg = self.client_stub.DeliverMessages(auth_msg_request)
+                if not msg.error_code:
+                    self.messages.insert(END, msg.message + '\n')
+                
+            time.sleep(0.5)
 
                
 
@@ -158,15 +157,16 @@ class ClientApplication:
 
         This method should be called once during setup of the chat client's UI.
         """
-
+        # set title card
+        self.application_window.winfo_toplevel().title("WiredIN")
         # setup up the UI for the specific chat inbox
         self.messages = Text()
         self.messages.pack(side=TOP)
-        self.messages.insert(END, "Welcome to the server!\n")
+        self.messages.insert(END, f"Hi {self.fullname}!, Welcome to the server!\n")
 
         # display the username for the current applicant
         self.display_username = Label(
-            self.application_window, text=self.username)
+            self.application_window, text=f"{self.fullname} - {self.username} -> to:")
         self.display_username.pack(side=LEFT)
 
         # Recipient input
@@ -275,7 +275,9 @@ def Run() -> None:
     use_grpc = (use_grpc == "y")
     print(f"use_grpc: {use_grpc}")
 
-    root = Tk()  # I just used a very simple Tk window for the chat UI, this can be replaced by anything
+    root = Tk()
+    root.tk_setPalette(background='LightBlue', foreground='black', activeBackground='black', activeForeground='LightBlue3')
+    
     frame = Frame(root, width=300, height=300)
     frame.pack()
     root.withdraw()
